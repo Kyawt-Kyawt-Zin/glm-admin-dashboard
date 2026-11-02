@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { updateOrderStatus } from "../services/api.js";
+
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-AE", {
     style: "currency",
@@ -16,8 +19,57 @@ const formatText = (value) => {
   return value ? value.replaceAll("_", " ") : "—";
 };
 
-function OrderDetailsPanel({ details, onClose }) {
+const getNextStatus = (order) => {
+  const nextStatusByCurrentStatus = {
+    pending: "confirmed",
+    confirmed: "processing",
+    ready_for_delivery: "out_for_delivery",
+    out_for_delivery: "delivered",
+    ready_for_pickup: "picked_up",
+  };
+
+  if (order.status === "processing") {
+    return order.delivery_method === "pickup"
+      ? "ready_for_pickup"
+      : "ready_for_delivery";
+  }
+
+  return nextStatusByCurrentStatus[order.status] || null;
+};
+
+function OrderDetailsPanel({ details, onClose, token, onStatusUpdated }) {
   const { order, items, payments } = details;
+
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
+  const [statusError, setStatusError] = useState("");
+  const nextStatus = getNextStatus(order);
+  const isPreorderWaitingForDeposit =
+    order.fulfillment_type === "preorder" &&
+    order.status === "pending" &&
+    order.payment_status !== "deposit_confirmed";
+
+  const handleAdvanceStatus = () => {
+    if (nextStatus) {
+      setStatusError("");
+      setIsConfirmingStatus(true);
+    }
+  };
+
+  const handleConfirmStatus = async () => {
+    try {
+      setStatusError("");
+      setIsUpdatingStatus(true);
+
+      await updateOrderStatus(token, order.id, nextStatus);
+      await onStatusUpdated(order.id);
+      setIsConfirmingStatus(false);
+    } catch (error) {
+      setStatusError(error.message);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   return (
     <section className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 md:p-6">
@@ -40,6 +92,90 @@ function OrderDetailsPanel({ details, onClose }) {
           Close details
         </button>
       </div>
+
+      {statusError && (
+        <p className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
+          Unable to update order status: {statusError}
+        </p>
+      )}
+
+      {isPreorderWaitingForDeposit && (
+        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          This preorder cannot be confirmed yet. Staff must confirm the 20%
+          deposit payment first.
+        </div>
+      )}
+
+      {nextStatus && !isPreorderWaitingForDeposit && (
+        <div className="mt-5 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-emerald-950">
+              Next operational action
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Move this order to:{" "}
+              <span className="font-semibold capitalize">
+                {formatText(nextStatus)}
+              </span>
+            </p>
+          </div>
+
+          <button
+            className="rounded-lg bg-emerald-900 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            onClick={handleAdvanceStatus}
+            type="button"
+          >
+            Review update
+          </button>
+        </div>
+      )}
+
+      {isConfirmingStatus && nextStatus && (
+        <div className="mt-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+          <p className="text-sm font-semibold text-amber-800">
+            Confirm order status update
+          </p>
+
+          <p className="mt-2 text-sm text-slate-700">
+            You are about to change this order from{" "}
+            <span className="font-semibold capitalize">
+              {formatText(order.status)}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold capitalize">
+              {formatText(nextStatus)}
+            </span>
+            .
+          </p>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Please check the order details before confirming. A future status
+            correction will require an admin reason.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isUpdatingStatus}
+              onClick={() => setIsConfirmingStatus(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+
+            <button
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isUpdatingStatus}
+              onClick={handleConfirmStatus}
+              type="button"
+            >
+              {isUpdatingStatus
+                ? "Updating..."
+                : `Yes, mark as ${formatText(nextStatus)}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <article className="rounded-xl bg-white p-4">

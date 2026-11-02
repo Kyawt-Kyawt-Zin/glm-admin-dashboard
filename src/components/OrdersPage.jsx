@@ -72,6 +72,25 @@ function OrdersPage({ token }) {
     }
   };
 
+  const handleStatusUpdated = async (orderId) => {
+    try {
+      setDetailsError("");
+      setIsDetailsLoading(true);
+
+      const [ordersData, detailsData] = await Promise.all([
+        getOrders(token),
+        getOrderById(token, orderId),
+      ]);
+
+      setOrders(ordersData);
+      setSelectedOrderDetails(detailsData);
+    } catch (error) {
+      setDetailsError(error.message);
+    } finally {
+      setIsDetailsLoading(false);
+    }
+  };
+
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm md:p-6">
       <div className="mb-6">
@@ -191,6 +210,8 @@ function OrdersPage({ token }) {
             <OrderDetailsPanel
               details={selectedOrderDetails}
               onClose={() => setSelectedOrderDetails(null)}
+              onStatusUpdated={handleStatusUpdated}
+              token={token}
             />
           )}
         </>

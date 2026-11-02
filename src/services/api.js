@@ -7,7 +7,6 @@ const request = async (path, options = {}) => {
       "Content-Type": "application/json",
       ...options.headers,
     },
-    ...options,
   });
 
   const result = await response.json();
@@ -64,4 +63,23 @@ export const getOrderById = async (token, orderId) => {
       Authorization: `Bearer ${token}`,
     },
   });
+};
+
+export const updateOrderStatus = async (token, orderId, status) => {
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Unable to update order status");
+  }
+
+  return result.data;
 };
