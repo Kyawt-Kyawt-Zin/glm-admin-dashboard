@@ -35,7 +35,7 @@ const statusStyle = (status) => {
   return styles[status] || "bg-stone-100 text-stone-700";
 };
 
-function OrdersPage({ token }) {
+function OrdersPage({ token, currentUser }) {
   const [orders, setOrders] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
@@ -208,6 +208,7 @@ function OrdersPage({ token }) {
 
           {selectedOrderDetails && (
             <OrderDetailsPanel
+              currentUser={currentUser}
               details={selectedOrderDetails}
               onClose={() => setSelectedOrderDetails(null)}
               onStatusUpdated={handleStatusUpdated}

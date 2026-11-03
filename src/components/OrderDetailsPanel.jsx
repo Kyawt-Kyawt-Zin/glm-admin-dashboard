@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { updateOrderStatus } from "../services/api.js";
+import { correctOrderStatus, updateOrderStatus } from "../services/api.js";
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-AE", {
@@ -37,13 +37,48 @@ const getNextStatus = (order) => {
   return nextStatusByCurrentStatus[order.status] || null;
 };
 
-function OrderDetailsPanel({ details, onClose, token, onStatusUpdated }) {
-  const { order, items, payments } = details;
+const getCorrectionOptions = (order) => {
+  const workflow =
+    order.delivery_method === "pickup"
+      ? ["pending", "confirmed", "processing", "ready_for_pickup"]
+      : [
+          "pending",
+          "confirmed",
+          "processing",
+          "ready_for_delivery",
+          "out_for_delivery",
+        ];
+
+  const currentIndex = workflow.indexOf(order.status);
+
+  if (currentIndex <= 0) {
+    return [];
+  }
+
+  return workflow.slice(0, currentIndex).reverse();
+};
+
+function OrderDetailsPanel({
+  details,
+  onClose,
+  token,
+  onStatusUpdated,
+  currentUser,
+}) {
+  const { order, items, payments, statusHistory = [] } = details;
 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [isCorrectionOpen, setIsCorrectionOpen] = useState(false);
+  const [correctionStatus, setCorrectionStatus] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [correctionError, setCorrectionError] = useState("");
+  const [isCorrecting, setIsCorrecting] = useState(false);
   const nextStatus = getNextStatus(order);
+  const correctionOptions = getCorrectionOptions(order);
+  const canCorrectOrder =
+    currentUser?.role === "admin" && correctionOptions.length > 0;
   const isPreorderWaitingForDeposit =
     order.fulfillment_type === "preorder" &&
     order.status === "pending" &&
@@ -68,6 +103,41 @@ function OrderDetailsPanel({ details, onClose, token, onStatusUpdated }) {
       setStatusError(error.message);
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleOpenCorrection = () => {
+    setCorrectionError("");
+    setCorrectionReason("");
+    setCorrectionStatus(correctionOptions[0] || "");
+    setIsCorrectionOpen(true);
+  };
+
+  const handleConfirmCorrection = async () => {
+    if (correctionReason.trim().length < 10) {
+      setCorrectionError(
+        "Please write a correction reason with at least 10 characters.",
+      );
+      return;
+    }
+
+    try {
+      setCorrectionError("");
+      setIsCorrecting(true);
+
+      await correctOrderStatus(
+        token,
+        order.id,
+        correctionStatus,
+        correctionReason.trim(),
+      );
+
+      await onStatusUpdated(order.id);
+      setIsCorrectionOpen(false);
+    } catch (error) {
+      setCorrectionError(error.message);
+    } finally {
+      setIsCorrecting(false);
     }
   };
 
@@ -172,6 +242,94 @@ function OrderDetailsPanel({ details, onClose, token, onStatusUpdated }) {
               {isUpdatingStatus
                 ? "Updating..."
                 : `Yes, mark as ${formatText(nextStatus)}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canCorrectOrder && !isCorrectionOpen && (
+        <div className="mt-5 flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              Admin correction
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Correct a mistaken status update. A written reason is required and
+              will be saved in the permanent history.
+            </p>
+          </div>
+
+          <button
+            className="rounded-lg border border-amber-700 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+            onClick={handleOpenCorrection}
+            type="button"
+          >
+            Correct status
+          </button>
+        </div>
+      )}
+
+      {isCorrectionOpen && (
+        <div className="mt-5 rounded-xl border-2 border-amber-400 bg-amber-50 p-5">
+          <p className="text-sm font-semibold text-amber-900">
+            Correct order status
+          </p>
+
+          <p className="mt-2 text-sm text-amber-800">
+            This is an admin action. It moves the order back to an earlier stage
+            and saves your reason permanently.
+          </p>
+
+          <label className="mt-4 block text-sm font-semibold text-slate-700">
+            Correct status
+            <select
+              className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-amber-600"
+              disabled={isCorrecting}
+              onChange={(event) => setCorrectionStatus(event.target.value)}
+              value={correctionStatus}
+            >
+              {correctionOptions.map((status) => (
+                <option key={status} value={status}>
+                  {formatText(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="mt-4 block text-sm font-semibold text-slate-700">
+            Correction reason
+            <textarea
+              className="mt-2 min-h-28 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-amber-600"
+              disabled={isCorrecting}
+              onChange={(event) => setCorrectionReason(event.target.value)}
+              placeholder="Example: The package was not finished after quality checking."
+              value={correctionReason}
+            />
+          </label>
+
+          {correctionError && (
+            <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              {correctionError}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isCorrecting}
+              onClick={() => setIsCorrectionOpen(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+
+            <button
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isCorrecting}
+              onClick={handleConfirmCorrection}
+              type="button"
+            >
+              {isCorrecting ? "Correcting..." : "Save correction"}
             </button>
           </div>
         </div>
@@ -305,6 +463,77 @@ function OrderDetailsPanel({ details, onClose, token, onStatusUpdated }) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h4 className="font-semibold text-emerald-950">Status history</h4>
+            <p className="mt-1 text-sm text-slate-600">
+              A permanent record of updates and admin corrections.
+            </p>
+          </div>
+
+          <span className="text-sm text-slate-500">
+            {statusHistory.length} record{statusHistory.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        {statusHistory.length === 0 ? (
+          <p className="mt-3 rounded-xl bg-white p-4 text-sm text-slate-600">
+            No status updates have been recorded yet.
+          </p>
+        ) : (
+          <ol className="mt-3 space-y-3">
+            {statusHistory.map((entry) => (
+              <li
+                className="rounded-xl border border-stone-200 bg-white p-4"
+                key={entry.id}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          entry.action_type === "correction"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {entry.action_type === "correction"
+                          ? "Admin correction"
+                          : "Status update"}
+                      </span>
+
+                      <p className="font-semibold capitalize text-emerald-950">
+                        {formatText(entry.previous_status)} →{" "}
+                        {formatText(entry.new_status)}
+                      </p>
+                    </div>
+
+                    <p className="mt-2 text-sm text-slate-600">
+                      By {entry.changed_by_name || "Former team member"}
+                      {entry.changed_by_role
+                        ? ` (${entry.changed_by_role})`
+                        : ""}
+                    </p>
+
+                    {entry.reason && (
+                      <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                        <span className="font-semibold">Reason: </span>
+                        {entry.reason}
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="shrink-0 text-sm text-slate-500">
+                    {formatDate(entry.created_at)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </section>
   );

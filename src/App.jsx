@@ -142,7 +142,9 @@ function App() {
             </>
           )}
 
-          {activePage === "Orders" && <OrdersPage token={session.token} />}
+          {activePage === "Orders" && (
+            <OrdersPage currentUser={session.user} token={session.token} />
+          )}
 
           {!["Dashboard", "Orders"].includes(activePage) && (
             <div className="rounded-2xl bg-white p-6 shadow-sm">
