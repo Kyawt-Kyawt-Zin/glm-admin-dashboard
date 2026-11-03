@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getOrderById, getOrders } from "../services/api.js";
 import OrderDetailsPanel from "./OrderDetailsPanel.jsx";
 
@@ -35,12 +35,25 @@ const statusStyle = (status) => {
   return styles[status] || "bg-stone-100 text-stone-700";
 };
 
+const ongoingStatuses = [
+  "pending",
+  "confirmed",
+  "processing",
+  "ready_for_delivery",
+  "out_for_delivery",
+  "ready_for_pickup",
+];
+
+const completedStatuses = ["delivered", "picked_up"];
+
 function OrdersPage({ token, currentUser }) {
   const [orders, setOrders] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [detailsError, setDetailsError] = useState("");
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [orderGroup, setOrderGroup] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -56,6 +69,32 @@ function OrdersPage({ token, currentUser }) {
 
     loadOrders();
   }, [token]);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const matchesGroup =
+        orderGroup === "all" ||
+        (orderGroup === "ongoing" && ongoingStatuses.includes(order.status)) ||
+        (orderGroup === "completed" &&
+          completedStatuses.includes(order.status)) ||
+        (orderGroup === "cancelled" && order.status === "cancelled");
+
+      const matchesPayment =
+        paymentFilter === "all" || order.payment_status === paymentFilter;
+
+      return matchesGroup && matchesPayment;
+    });
+  }, [orders, orderGroup, paymentFilter]);
+
+  const orderGroupCounts = {
+    all: orders.length,
+    ongoing: orders.filter((order) => ongoingStatuses.includes(order.status))
+      .length,
+    completed: orders.filter((order) =>
+      completedStatuses.includes(order.status),
+    ).length,
+    cancelled: orders.filter((order) => order.status === "cancelled").length,
+  };
 
   const handleViewDetails = async (orderId) => {
     try {
@@ -101,19 +140,67 @@ function OrdersPage({ token, currentUser }) {
         </p>
       </div>
 
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["all", "All orders"],
+            ["ongoing", "Ongoing"],
+            ["completed", "Completed"],
+            ["cancelled", "Cancelled"],
+          ].map(([groupKey, label]) => (
+            <button
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                orderGroup === groupKey
+                  ? "bg-emerald-900 text-white"
+                  : "bg-stone-100 text-slate-700 hover:bg-stone-200"
+              }`}
+              key={groupKey}
+              onClick={() => {
+                setOrderGroup(groupKey);
+
+                if (groupKey !== "cancelled") {
+                  setPaymentFilter("all");
+                }
+              }}
+              type="button"
+            >
+              {label} ({orderGroupCounts[groupKey]})
+            </button>
+          ))}
+        </div>
+
+        {orderGroup === "cancelled" && (
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700 sm:flex-row sm:items-center">
+            Refund/payment result
+            <select
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-700"
+              onChange={(event) => setPaymentFilter(event.target.value)}
+              value={paymentFilter}
+            >
+              <option value="all">All cancellation payments</option>
+              <option value="refund_pending">Refund pending</option>
+              <option value="refunded">Refunded</option>
+              <option value="deposit_forfeited">Deposit forfeited</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="deposit_pending">Deposit pending</option>
+            </select>
+          </label>
+        )}
+      </div>
+
       {errorMessage && (
         <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
           Unable to load orders: {errorMessage}
         </p>
       )}
 
-      {!errorMessage && orders.length === 0 && (
+      {!errorMessage && filteredOrders.length === 0 && (
         <p className="rounded-lg bg-stone-50 p-4 text-sm text-slate-600">
           No orders have been created yet.
         </p>
       )}
 
-      {!errorMessage && orders.length > 0 && (
+      {!errorMessage && filteredOrders.length > 0 && (
         <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[950px] text-left text-sm">
@@ -132,7 +219,7 @@ function OrdersPage({ token, currentUser }) {
               </thead>
 
               <tbody>
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                   <tr
                     className={`border-b border-stone-100 last:border-b-0 ${
                       selectedOrderDetails?.order.id === order.id

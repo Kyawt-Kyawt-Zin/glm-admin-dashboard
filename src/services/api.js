@@ -106,3 +106,17 @@ export const correctOrderStatus = async (token, orderId, status, reason) => {
 
   return result.data;
 };
+
+export const getProducts = async () => {
+  return request("/products");
+};
+
+export const getProductImageUrl = (imagePath) => {
+  if (!imagePath) {
+    return null;
+  }
+
+  const backendBaseUrl = API_BASE_URL.replace(/\/api$/, "");
+
+  return `${backendBaseUrl}${imagePath}`;
+};

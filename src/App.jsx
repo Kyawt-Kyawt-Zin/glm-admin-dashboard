@@ -6,6 +6,7 @@ import DashboardOverview from "./components/DashboardOverview.jsx";
 import RecentOrders from "./components/RecentOrders.jsx";
 import LowStockVariants from "./components/LowstockVariants.jsx";
 import OrdersPage from "./components/OrdersPage.jsx";
+import ProductsPage from "./components/ProductsPage.jsx";
 
 const menuItems = [
   "Dashboard",
@@ -146,7 +147,9 @@ function App() {
             <OrdersPage currentUser={session.user} token={session.token} />
           )}
 
-          {!["Dashboard", "Orders"].includes(activePage) && (
+          {activePage === "Products" && <ProductsPage />}
+
+          {!["Dashboard", "Orders", "Products"].includes(activePage) && (
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               <h3 className="text-2xl font-bold">{activePage}</h3>
               <p className="mt-2 text-slate-600">
