@@ -65,7 +65,7 @@ function OrderDetailsPanel({
   onStatusUpdated,
   currentUser,
 }) {
-  const { order, items, payments, statusHistory = [] } = details;
+  const { order, items, payments } = details;
 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
@@ -159,7 +159,7 @@ function OrderDetailsPanel({
           onClick={onClose}
           type="button"
         >
-          Close details
+          Back to orders
         </button>
       </div>
 
@@ -463,77 +463,6 @@ function OrderDetailsPanel({
             </tbody>
           </table>
         </div>
-      </div>
-
-      <div className="mt-6">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h4 className="font-semibold text-emerald-950">Status history</h4>
-            <p className="mt-1 text-sm text-slate-600">
-              A permanent record of updates and admin corrections.
-            </p>
-          </div>
-
-          <span className="text-sm text-slate-500">
-            {statusHistory.length} record{statusHistory.length === 1 ? "" : "s"}
-          </span>
-        </div>
-
-        {statusHistory.length === 0 ? (
-          <p className="mt-3 rounded-xl bg-white p-4 text-sm text-slate-600">
-            No status updates have been recorded yet.
-          </p>
-        ) : (
-          <ol className="mt-3 space-y-3">
-            {statusHistory.map((entry) => (
-              <li
-                className="rounded-xl border border-stone-200 bg-white p-4"
-                key={entry.id}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          entry.action_type === "correction"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        {entry.action_type === "correction"
-                          ? "Admin correction"
-                          : "Status update"}
-                      </span>
-
-                      <p className="font-semibold capitalize text-emerald-950">
-                        {formatText(entry.previous_status)} →{" "}
-                        {formatText(entry.new_status)}
-                      </p>
-                    </div>
-
-                    <p className="mt-2 text-sm text-slate-600">
-                      By {entry.changed_by_name || "Former team member"}
-                      {entry.changed_by_role
-                        ? ` (${entry.changed_by_role})`
-                        : ""}
-                    </p>
-
-                    {entry.reason && (
-                      <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                        <span className="font-semibold">Reason: </span>
-                        {entry.reason}
-                      </p>
-                    )}
-                  </div>
-
-                  <p className="shrink-0 text-sm text-slate-500">
-                    {formatDate(entry.created_at)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
       </div>
     </section>
   );

@@ -120,3 +120,11 @@ export const getProductImageUrl = (imagePath) => {
 
   return `${backendBaseUrl}${imagePath}`;
 };
+
+export const getProductVariants = async (token) => {
+  return request("/product-variants", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

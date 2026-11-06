@@ -1,19 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getOrderById, getOrders } from "../services/api.js";
 import OrderDetailsPanel from "./OrderDetailsPanel.jsx";
+import { Eye, BookOpen } from "lucide-react";
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-AE", {
     style: "currency",
     currency: "AED",
   }).format(amount);
-};
-
-const formatDate = (dateValue) => {
-  return new Intl.DateTimeFormat("en-AE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(dateValue));
 };
 
 const formatText = (value) => {
@@ -54,6 +49,7 @@ function OrdersPage({ token, currentUser }) {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [orderGroup, setOrderGroup] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -202,85 +198,97 @@ function OrdersPage({ token, currentUser }) {
 
       {!errorMessage && filteredOrders.length > 0 && (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[950px] text-left text-sm">
-              <thead className="border-b border-stone-200 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-3 font-semibold">Order</th>
-                  <th className="px-3 py-3 font-semibold">Customer</th>
-                  <th className="px-3 py-3 font-semibold">Fulfillment</th>
-                  <th className="px-3 py-3 font-semibold">Order status</th>
-                  <th className="px-3 py-3 font-semibold">Payment</th>
-                  <th className="px-3 py-3 font-semibold">Delivery</th>
-                  <th className="px-3 py-3 font-semibold">Total</th>
-                  <th className="px-3 py-3 font-semibold">Created</th>
-                  <th className="px-3 py-3 font-semibold">Action</th>
-                </tr>
-              </thead>
+          <table className="w-full table-fixed text-centerF text-sm">
+            <thead className="border-b border-stone-200 text-[11px] uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="w-[18%] px-3 py-3 font-semibold">Order</th>
+                <th className="w-[15%] px-3 py-3 font-semibold">Customer</th>
+                <th className="w-[18%] px-3 py-3 font-semibold">
+                  Fulfillment / delivery
+                </th>
+                <th className="w-[15%] px-3 py-3 font-semibold">Status</th>
+                <th className="w-[13%] px-3 py-3 font-semibold">Payment</th>
+                <th className="w-[12%] px-3 py-3 font-semibold">Total</th>
+                <th className="w-[9%] px-3 py-3 font-semibold">Action</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {filteredOrders.map((order) => (
-                  <tr
-                    className={`border-b border-stone-100 last:border-b-0 ${
-                      selectedOrderDetails?.order.id === order.id
-                        ? "bg-emerald-50"
-                        : "hover:bg-stone-50"
-                    }`}
-                    key={order.id}
-                  >
-                    <td className="px-3 py-4 font-semibold text-emerald-950">
-                      {order.order_number}
-                    </td>
-                    <td className="px-3 py-4">
-                      <p className="font-medium">{order.customer_name}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {order.customer_email}
-                      </p>
-                    </td>
-                    <td className="px-3 py-4 capitalize">
+            <tbody>
+              {filteredOrders.map((order) => (
+                <tr
+                  className={`border-b border-stone-100 last:border-b-0 ${
+                    selectedOrderDetails?.order.id === order.id
+                      ? "bg-emerald-50"
+                      : "hover:bg-stone-50"
+                  }`}
+                  key={order.id}
+                >
+                  <td className="break-words px-3 py-4 font-semibold text-emerald-950">
+                    {order.order_number}
+                  </td>
+
+                  <td className="px-3 py-4 font-medium">
+                    {order.customer_name}
+                  </td>
+
+                  <td className="px-3 py-4">
+                    <p className="capitalize">
                       {formatText(order.fulfillment_type)}
-                    </td>
-                    <td className="px-3 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusStyle(
-                          order.status,
-                        )}`}
-                      >
-                        {formatText(order.status)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-4 capitalize">
-                      {formatText(order.payment_status)}
-                    </td>
-                    <td className="px-3 py-4 capitalize">
+                    </p>
+                    <p className="mt-1 text-xs capitalize text-slate-500">
                       {formatText(order.delivery_method)}
-                    </td>
-                    <td className="px-3 py-4 font-semibold">
-                      {formatCurrency(order.total_amount)}
-                    </td>
-                    <td className="px-3 py-4 text-slate-500">
-                      {formatDate(order.created_at)}
-                    </td>
-                    <td className="px-3 py-4">
-                      <button
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-                          selectedOrderDetails?.order.id === order.id
-                            ? "bg-emerald-900 text-white"
-                            : "border border-emerald-800 text-emerald-900 hover:bg-emerald-50"
-                        }`}
-                        onClick={() => handleViewDetails(order.id)}
-                        type="button"
-                      >
-                        {selectedOrderDetails?.order.id === order.id
-                          ? "Viewing"
-                          : "View details"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </p>
+                  </td>
+
+                  <td className="px-3 py-4">
+                    <span
+                      className={`inline-block rounded-full px-3 py-1 text-center text-xs font-semibold capitalize ${statusStyle(
+                        order.status,
+                      )}`}
+                    >
+                      {formatText(order.status)}
+                    </span>
+                  </td>
+
+                  <td className="px-3 py-4 capitalize">
+                    {formatText(order.payment_status)}
+                  </td>
+
+                  <td className="px-3 py-4 font-semibold">
+                    {formatCurrency(order.total_amount)}
+                  </td>
+
+                  <td className="px-3 py-4">
+                    <button
+                      aria-label={
+                        selectedOrderDetails?.order.id === order.id
+                          ? "Viewing order details"
+                          : "View order details"
+                      }
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition ${
+                        selectedOrderDetails?.order.id === order.id
+                          ? "bg-emerald-900 text-white"
+                          : "border border-emerald-800 text-emerald-900 hover:bg-emerald-50"
+                      }`}
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                      title={
+                        selectedOrderDetails?.order.id === order.id
+                          ? "Viewing order details"
+                          : "View order details"
+                      }
+                      type="button"
+                    >
+                      {selectedOrderDetails?.order.id === order.id ? (
+                        <BookOpen aria-hidden="true" className="h-4 w-4" />
+                      ) : (
+                        <Eye aria-hidden="true" className="h-4 w-4" />
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           {isDetailsLoading && (
             <p className="mt-5 text-sm text-slate-500">
               Loading order details...
