@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getProductVariants } from "../services/api.js";
 
 const stockLabel = (variant) => {
@@ -8,12 +8,54 @@ const stockLabel = (variant) => {
 
   return `${variant.stock_quantity} in stock`;
 };
+const PAGE_LIMIT = 2;
+
+const getVisiblePageNumbers = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = [1];
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  if (start > 2) {
+    pages.push("left-ellipsis");
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+
+  if (end < totalPages - 1) {
+    pages.push("right-ellipsis");
+  }
+
+  pages.push(totalPages);
+
+  return pages;
+};
 
 export default function InventoryPage({ token }) {
   const [variants, setVariants] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_LIMIT,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const visiblePageNumbers = getVisiblePageNumbers(
+    pagination.page,
+    pagination.totalPages,
+  );
 
   useEffect(() => {
     const loadInventory = async () => {
@@ -21,8 +63,24 @@ export default function InventoryPage({ token }) {
         setIsLoading(true);
         setErrorMessage("");
 
-        const data = await getProductVariants(token);
-        setVariants(data);
+        const filterOptions =
+          filter === "in_stock"
+            ? { fulfillmentType: "in_stock" }
+            : filter === "preorder"
+              ? { fulfillmentType: "preorder" }
+              : filter === "low_stock"
+                ? { lowStock: true }
+                : {};
+
+        const data = await getProductVariants(token, {
+          page,
+          limit: PAGE_LIMIT,
+          search: searchTerm,
+          ...filterOptions,
+        });
+
+        setVariants(data.items);
+        setPagination(data.pagination);
       } catch (error) {
         setErrorMessage(error.message || "Unable to load inventory.");
       } finally {
@@ -31,28 +89,7 @@ export default function InventoryPage({ token }) {
     };
 
     loadInventory();
-  }, [token]);
-
-  const visibleVariants = useMemo(() => {
-    return variants.filter((variant) => {
-      if (filter === "in_stock") {
-        return variant.fulfillment_type === "in_stock";
-      }
-
-      if (filter === "preorder") {
-        return variant.fulfillment_type === "preorder";
-      }
-
-      if (filter === "low_stock") {
-        return (
-          variant.fulfillment_type === "in_stock" &&
-          Number(variant.stock_quantity) <= 3
-        );
-      }
-
-      return true;
-    });
-  }, [filter, variants]);
+  }, [filter, page, searchTerm, token]);
 
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
@@ -69,7 +106,7 @@ export default function InventoryPage({ token }) {
         </div>
 
         <p className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
-          {visibleVariants.length} variants shown
+          {pagination.total} variants found
         </p>
       </div>
 
@@ -118,7 +155,7 @@ export default function InventoryPage({ token }) {
             </thead>
 
             <tbody>
-              {visibleVariants.map((variant) => {
+              {variants.map((variant) => {
                 const isLowStock =
                   variant.fulfillment_type === "in_stock" &&
                   Number(variant.stock_quantity) <= 3;
@@ -173,10 +210,66 @@ export default function InventoryPage({ token }) {
             </tbody>
           </table>
 
-          {visibleVariants.length === 0 && (
+          {variants.length === 0 && (
             <p className="py-8 text-center text-slate-500">
               No variants match this filter.
             </p>
+          )}
+          {pagination.totalPages > 1 && (
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-stone-200 pt-5">
+              <p className="text-sm text-slate-500">
+                Page {pagination.page} of {pagination.totalPages} ·{" "}
+                {pagination.total} variants
+              </p>
+
+              <div className="flex items-center gap-1">
+                <button
+                  aria-label="Previous page"
+                  className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={pagination.page === 1}
+                  onClick={() => setPage((currentPage) => currentPage - 1)}
+                  type="button"
+                >
+                  ‹
+                </button>
+
+                {visiblePageNumbers.map((pageNumber) => {
+                  if (typeof pageNumber === "string") {
+                    return (
+                      <span className="px-2 text-slate-400" key={pageNumber}>
+                        …
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      aria-label={`Go to page ${pageNumber}`}
+                      className={`h-9 w-9 rounded-lg text-sm font-semibold ${
+                        pageNumber === pagination.page
+                          ? "bg-emerald-800 text-white"
+                          : "border border-stone-300 text-slate-700 hover:bg-stone-100"
+                      }`}
+                      key={pageNumber}
+                      onClick={() => setPage(pageNumber)}
+                      type="button"
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+
+                <button
+                  aria-label="Next page"
+                  className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={pagination.page === pagination.totalPages}
+                  onClick={() => setPage((currentPage) => currentPage + 1)}
+                  type="button"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

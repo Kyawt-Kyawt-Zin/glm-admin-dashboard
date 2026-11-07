@@ -121,8 +121,34 @@ export const getProductImageUrl = (imagePath) => {
   return `${backendBaseUrl}${imagePath}`;
 };
 
-export const getProductVariants = async (token) => {
-  return request("/product-variants", {
+export const getProductVariants = async (
+  token,
+  {
+    page = 1,
+    limit = 5,
+    fulfillmentType = "",
+    lowStock = false,
+    search = "",
+  } = {},
+) => {
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (fulfillmentType) {
+    query.set("fulfillmentType", fulfillmentType);
+  }
+
+  if (lowStock) {
+    query.set("lowStock", "true");
+  }
+
+  if (search.trim()) {
+    query.set("search", search.trim());
+  }
+
+  return request(`/product-variants?${query.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

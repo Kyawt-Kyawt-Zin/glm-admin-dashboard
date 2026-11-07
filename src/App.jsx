@@ -6,7 +6,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import goldenLoomLogo from "./assets/golden-loom-logo.png";
+import goldenLoomEmblem from "./assets/golden-loom-emblem.png";
 import LoginPage from "./components/LoginPage.jsx";
 import Footer from "./components/Footer.jsx";
 import DashboardOverview from "./components/DashboardOverview.jsx";
@@ -140,18 +140,14 @@ function App() {
   return (
     <div className="h-screen overflow-hidden bg-stone-100 text-slate-900 md:flex">
       <aside className="dashboard-scrollbar hidden h-full w-64 shrink-0 flex-col overflow-y-auto bg-emerald-950 p-5 text-white md:flex">
-        <div>
-          <div className="rounded-xl bg-stone-50 p-2">
+        <div className="-mx-5 -mt-5 mb-5 flex h-25 items-center justify-center border-b border-emerald-800">
+          <div className="flex h-22 w-22 items-center justify-center rounded-full bg-emerald-100 p-1.5 shadow-sm">
             <img
-              src={goldenLoomLogo}
               alt="Golden Loom Myanmar"
-              className="h-20 w-full object-contain"
+              className="h-full w-full object-contain"
+              src={goldenLoomEmblem}
             />
           </div>
-
-          <p className="mt-3 text-center text-lg font-semibold text-emerald-100">
-            Admin Dashboard
-          </p>
         </div>
 
         <nav className="mt-8 space-y-1">
@@ -172,7 +168,7 @@ function App() {
 
               {item.to === "/orders" && pendingOrderCount > 0 && (
                 <span
-                  className="min-w-5 rounded-full bg-emerald-950 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white"
+                  className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-emerald-950 shadow-sm"
                   title={`${pendingOrderCount} pending order${
                     pendingOrderCount === 1 ? "" : "s"
                   } need confirmation`}
@@ -190,7 +186,7 @@ function App() {
       </aside>
 
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 flex items-center justify-between border-b border-stone-200 bg-white px-6 py-5 md:px-10">
+        <header className="flex h-25 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-6 md:px-10">
           <div>
             <p className="text-sm text-slate-500">
               Welcome back, {session.user.full_name}
