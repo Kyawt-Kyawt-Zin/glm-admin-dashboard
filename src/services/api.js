@@ -154,3 +154,45 @@ export const getProductVariants = async (
     },
   });
 };
+
+export const getCategories = async () => {
+  return request("/categories");
+};
+
+export const createProduct = async (token, product) => {
+  return request("/products", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(product),
+  });
+};
+
+export const createProductVariant = async (token, variant) => {
+  return request("/product-variants", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(variant),
+  });
+};
+
+export const uploadProductImage = async (token, productId, formData) => {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/images`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Unable to upload product image.");
+  }
+
+  return result.data;
+};
