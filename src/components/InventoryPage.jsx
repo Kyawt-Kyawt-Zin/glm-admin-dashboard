@@ -8,7 +8,7 @@ const stockLabel = (variant) => {
 
   return `${variant.stock_quantity} in stock`;
 };
-const PAGE_LIMIT = 2;
+const PAGE_LIMIT = 5;
 
 const getVisiblePageNumbers = (currentPage, totalPages) => {
   if (totalPages <= 7) {
@@ -91,6 +91,19 @@ export default function InventoryPage({ token }) {
     loadInventory();
   }, [filter, page, searchTerm, token]);
 
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+
+    setPage(1);
+    setSearchTerm(searchInput.trim());
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setPage(1);
+  };
+
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
       <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
@@ -131,6 +144,43 @@ export default function InventoryPage({ token }) {
           </button>
         ))}
       </div>
+
+      <form
+        className="mt-5 flex flex-col gap-3 sm:flex-row"
+        onSubmit={handleSearchSubmit}
+      >
+        <label className="sr-only" htmlFor="inventory-search">
+          Search inventory
+        </label>
+
+        <input
+          className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+          id="inventory-search"
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder="Search by product, SKU, colour, or size…"
+          type="search"
+          value={searchInput}
+        />
+
+        <div className="flex gap-2">
+          <button
+            className="rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-900"
+            type="submit"
+          >
+            Search
+          </button>
+
+          {searchTerm && (
+            <button
+              className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-stone-100"
+              onClick={handleClearSearch}
+              type="button"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </form>
 
       {isLoading && <p className="mt-8 text-slate-500">Loading inventory…</p>}
 
