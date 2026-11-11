@@ -196,3 +196,37 @@ export const uploadProductImage = async (token, productId, formData) => {
 
   return result.data;
 };
+
+export const getProductVariantsByProductId = async (productId) => {
+  return request(`/products/${productId}/variants`);
+};
+
+export const createCategory = async (token, category) => {
+  return request("/categories", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(category),
+  });
+};
+
+export const updateCategory = async (token, categoryId, category) => {
+  return request(`/categories/${categoryId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(category),
+  });
+};
+
+export const updateCategoryStatus = async (token, categoryId, isActive) => {
+  return request(`/categories/${categoryId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ isActive }),
+  });
+};

@@ -22,6 +22,7 @@ import InventoryPage from "./components/InventoryPage.jsx";
 import ProductCreatePage from "./components/ProductCreatePage.jsx";
 import ProductVariantCreatePage from "./components/ProductVariantCreatePage.jsx";
 import ProductImageUploadPage from "./components/ProductImageUploadPage.jsx";
+import CategoriesPage from "./components/CategoriesPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
@@ -319,10 +320,7 @@ function App() {
                 element={<InventoryPage token={session.token} />}
               />
 
-              <Route
-                path="/categories"
-                element={<PlaceholderPage title="Categories" />}
-              />
+              <Route path="/categories" element={<CategoriesPage />} />
 
               <Route
                 path="/customers"

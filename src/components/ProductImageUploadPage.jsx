@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getProducts, uploadProductImage } from "../services/api.js";
+import {
+  getProducts,
+  getProductVariantsByProductId,
+  uploadProductImage,
+} from "../services/api.js";
 import SelectChevron from "./SelectChevron.jsx";
 
 export default function ProductImageUploadPage({ token }) {
@@ -9,6 +13,7 @@ export default function ProductImageUploadPage({ token }) {
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState({
     productId: "",
+    variantId: "",
     altText: "",
     sortOrder: "0",
     isPrimary: false,
@@ -18,6 +23,8 @@ export default function ProductImageUploadPage({ token }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -35,10 +42,44 @@ export default function ProductImageUploadPage({ token }) {
     loadProducts();
   }, []);
 
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (!form.productId) {
+        setVariants([]);
+        return;
+      }
+
+      try {
+        setIsLoadingVariants(true);
+
+        const data = await getProductVariantsByProductId(form.productId);
+
+        setVariants(
+          data.variants.filter((variant) => Number(variant.is_active) === 1),
+        );
+      } catch (error) {
+        setErrorMessage(error.message || "Unable to load product variants.");
+        setVariants([]);
+      } finally {
+        setIsLoadingVariants(false);
+      }
+    };
+
+    loadVariants();
+  }, [form.productId]);
+
   const updateField = (field, value) => {
     setForm((currentForm) => ({
       ...currentForm,
       [field]: value,
+    }));
+  };
+
+  const handleProductChange = (event) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      productId: event.target.value,
+      variantId: "",
     }));
   };
 
@@ -84,6 +125,9 @@ export default function ProductImageUploadPage({ token }) {
       imageData.append("image", imageFile);
       imageData.append("altText", form.altText.trim());
       imageData.append("sortOrder", form.sortOrder);
+      if (form.variantId) {
+        imageData.append("variantId", form.variantId);
+      }
       imageData.append("isPrimary", String(form.isPrimary));
 
       await uploadProductImage(token, Number(form.productId), imageData);
@@ -131,7 +175,7 @@ export default function ProductImageUploadPage({ token }) {
               className="w-full appearance-none rounded-xl border border-stone-300 bg-white px-4 py-3 pr-16 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
               disabled={isLoadingProducts}
               id="productId"
-              onChange={(event) => updateField("productId", event.target.value)}
+              onChange={handleProductChange}
               value={form.productId}
             >
               <option value="">
@@ -151,6 +195,49 @@ export default function ProductImageUploadPage({ token }) {
           {fieldErrors.productId && (
             <p className="mt-1 text-sm text-red-600">{fieldErrors.productId}</p>
           )}
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-semibold text-slate-700"
+            htmlFor="variantId"
+          >
+            Variant
+            <span className="ml-1 font-normal text-slate-500">(optional)</span>
+          </label>
+
+          <div className="relative">
+            <select
+              className="w-full appearance-none rounded-xl border border-stone-300 bg-white px-4 py-3 pr-16 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-stone-100"
+              disabled={!form.productId || isLoadingVariants}
+              id="variantId"
+              onChange={(event) => updateField("variantId", event.target.value)}
+              value={form.variantId}
+            >
+              <option value="">
+                {!form.productId
+                  ? "Choose a product first"
+                  : isLoadingVariants
+                    ? "Loading variants..."
+                    : variants.length === 0
+                      ? "No active variants — general product image"
+                      : "General product image (all variants)"}
+              </option>
+
+              {variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.color} · {variant.size} — {variant.sku}
+                </option>
+              ))}
+            </select>
+
+            <SelectChevron />
+          </div>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Leave this as general product image when the photo applies to every
+            colour or size.
+          </p>
         </div>
 
         <div>

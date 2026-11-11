@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getProductImageUrl, getProducts } from "../services/api.js";
 import { useNavigate } from "react-router-dom";
-import { Layers, Plus } from "lucide-react";
+import { ImagePlus, Layers, Plus } from "lucide-react";
 
 const formatText = (value) => {
   return value ? value.replaceAll("_", " ") : "—";
@@ -69,29 +69,42 @@ function ProductsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3 md:flex-nowrap">
+        <div className="flex flex-col items-start gap-3 lg:items-end">
           <div className="rounded-xl bg-emerald-50 px-3 py-3 text-sm">
             <span className="font-semibold text-emerald-950">
               {activeCount}
             </span>{" "}
             active of {products.length} products
           </div>
-          <button
-            className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl border border-emerald-700 px-3 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-            onClick={() => navigate("/products/variants/new")}
-            type="button"
-          >
-            <Layers size={18} strokeWidth={2.5} />
-            Add variant
-          </button>
-          <button
-            className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900"
-            onClick={() => navigate("/products/new")}
-            type="button"
-          >
-            <Plus size={18} strokeWidth={2.5} />
-            Add product
-          </button>
+
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            <button
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl border border-emerald-700 px-3 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+              onClick={() => navigate("/products/variants/new")}
+              type="button"
+            >
+              <Layers size={18} strokeWidth={2.5} />
+              Add variant
+            </button>
+
+            <button
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl border border-emerald-700 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+              onClick={() => navigate("/products/images/new")}
+              type="button"
+            >
+              <ImagePlus size={18} strokeWidth={2.5} />
+              Upload image
+            </button>
+
+            <button
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900"
+              onClick={() => navigate("/products/new")}
+              type="button"
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              Add product
+            </button>
+          </div>
         </div>
       </div>
 

@@ -66,8 +66,13 @@ export default function ProductVariantCreatePage({ token }) {
       errors.sku = "SKU must contain at least 3 characters.";
     }
 
-    if (!form.price || Number(form.price) <= 0) {
+    const price = Number(form.price);
+    const priceInFils = Math.round(price * 100);
+
+    if (!form.price || !Number.isFinite(price) || price <= 0) {
       errors.price = "Price must be greater than zero.";
+    } else if (priceInFils % 25 !== 0) {
+      errors.price = "Price must use .00, .25, .50, or .75!";
     }
 
     if (
@@ -256,10 +261,10 @@ export default function ProductVariantCreatePage({ token }) {
             <input
               className="w-full rounded-xl border border-stone-300 px-4 py-3 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
               id="price"
-              min="0.01"
+              min="0.25"
+              step="0.25"
               onChange={(event) => updateField("price", event.target.value)}
               placeholder="Example: 150"
-              step="0.01"
               type="number"
               value={form.price}
             />
