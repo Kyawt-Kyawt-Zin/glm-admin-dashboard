@@ -22,7 +22,9 @@ import InventoryPage from "./components/InventoryPage.jsx";
 import ProductCreatePage from "./components/ProductCreatePage.jsx";
 import ProductVariantCreatePage from "./components/ProductVariantCreatePage.jsx";
 import ProductImageUploadPage from "./components/ProductImageUploadPage.jsx";
+import ProductEditPage from "./components/ProductEditPage.jsx";
 import CategoriesPage from "./components/CategoriesPage.jsx";
+import CategoryEditPage from "./components/CategoryEditPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
@@ -306,6 +308,11 @@ function App() {
               />
 
               <Route
+                path="/products/:productId"
+                element={<ProductEditPage token={session.token} />}
+              />
+
+              <Route
                 path="/products/variants/new"
                 element={<ProductVariantCreatePage token={session.token} />}
               />
@@ -320,7 +327,15 @@ function App() {
                 element={<InventoryPage token={session.token} />}
               />
 
-              <Route path="/categories" element={<CategoriesPage />} />
+              <Route
+                path="/categories"
+                element={<CategoriesPage token={session.token} />}
+              />
+
+              <Route
+                path="/categories/:categoryId"
+                element={<CategoryEditPage token={session.token} />}
+              />
 
               <Route
                 path="/customers"

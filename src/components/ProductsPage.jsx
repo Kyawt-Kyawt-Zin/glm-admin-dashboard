@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getProductImageUrl, getProducts } from "../services/api.js";
 import { useNavigate } from "react-router-dom";
-import { ImagePlus, Layers, Plus } from "lucide-react";
+import { Pencil, ImagePlus, Plus } from "lucide-react";
 
 const formatText = (value) => {
   return value ? value.replaceAll("_", " ") : "—";
@@ -79,15 +79,6 @@ function ProductsPage() {
 
           <div className="flex flex-wrap items-center gap-3 lg:justify-end">
             <button
-              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl border border-emerald-700 px-3 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-              onClick={() => navigate("/products/variants/new")}
-              type="button"
-            >
-              <Layers size={18} strokeWidth={2.5} />
-              Add variant
-            </button>
-
-            <button
               className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl border border-emerald-700 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
               onClick={() => navigate("/products/images/new")}
               type="button"
@@ -153,7 +144,7 @@ function ProductsPage() {
 
             return (
               <article
-                className="overflow-hidden rounded-2xl border border-stone-200 bg-white"
+                className="flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white"
                 key={product.id}
               >
                 <div className="flex h-48 items-center justify-center bg-stone-100">
@@ -168,7 +159,7 @@ function ProductsPage() {
                   )}
                 </div>
 
-                <div className="p-5">
+                <div className="flex flex-1 flex-col p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-amber-700">
@@ -202,6 +193,17 @@ function ProductsPage() {
                     <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-slate-700">
                       /{product.slug}
                     </span>
+                  </div>
+
+                  <div className="mt-auto pt-5">
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-700 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                      onClick={() => navigate(`/products/${product.id}`)}
+                      type="button"
+                    >
+                      <Pencil size={16} strokeWidth={2.5} />
+                      Edit product
+                    </button>
                   </div>
                 </div>
               </article>

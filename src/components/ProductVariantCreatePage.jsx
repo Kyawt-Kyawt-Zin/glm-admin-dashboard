@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { createProductVariant, getProducts } from "../services/api.js";
 import SelectChevron from "./SelectChevron.jsx";
+import { Lock } from "lucide-react";
 
 export default function ProductVariantCreatePage({ token }) {
   const navigate = useNavigate();
-
+  const [searchParams] = useSearchParams();
+  const preselectedProductId = searchParams.get("productId") || "";
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState({
-    productId: "",
+    productId: preselectedProductId,
     color: "",
     size: "Free Size",
     sku: "",
@@ -155,10 +157,17 @@ export default function ProductVariantCreatePage({ token }) {
             Product
           </label>
 
-          <div className="relative">
+          {preselectedProductId && (
+            <p className="mt-2 text-sm text-emerald-700">
+              This variant will be added to the product selected on the previous
+              page.
+            </p>
+          )}
+
+          <div className="relative mt-2">
             <select
               className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
-              disabled={isLoadingProducts}
+              disabled={isLoadingProducts || Boolean(preselectedProductId)}
               id="productId"
               onChange={(event) => updateField("productId", event.target.value)}
               value={form.productId}
@@ -173,7 +182,16 @@ export default function ProductVariantCreatePage({ token }) {
                 </option>
               ))}
             </select>
-            <SelectChevron />
+            {preselectedProductId ? (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-1.5 right-1.5 top-1.5 flex w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100"
+              >
+                <Lock size={18} strokeWidth={2.5} />
+              </span>
+            ) : (
+              <SelectChevron />
+            )}
           </div>
 
           {fieldErrors.productId && (

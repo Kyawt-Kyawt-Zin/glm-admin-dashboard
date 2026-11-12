@@ -159,6 +159,10 @@ export const getCategories = async () => {
   return request("/categories");
 };
 
+export const getCategoryById = async (categoryId) => {
+  return request(`/categories/${categoryId}`);
+};
+
 export const createProduct = async (token, product) => {
   return request("/products", {
     method: "POST",
@@ -228,5 +232,19 @@ export const updateCategoryStatus = async (token, categoryId, isActive) => {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ isActive }),
+  });
+};
+
+export const getProductById = async (productId) => {
+  return request(`/products/${productId}`);
+};
+
+export const updateProduct = async (token, productId, product) => {
+  return request(`/products/${productId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(product),
   });
 };
