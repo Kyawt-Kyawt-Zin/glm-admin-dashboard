@@ -99,6 +99,24 @@ function App() {
   const [session, setSession] = useState(loadSavedSession);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sessionMessage, setSessionMessage] = useState("");
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("glmAdminSession");
+      setSession(null);
+      setSessionMessage(
+        "Your session expired for security. Please sign in again.",
+      );
+      setIsMobileMenuOpen(false);
+    };
+
+    window.addEventListener("glm-session-expired", handleSessionExpired);
+
+    return () => {
+      window.removeEventListener("glm-session-expired", handleSessionExpired);
+    };
+  }, []);
 
   const loadPendingOrderCount = useCallback(async () => {
     if (!session?.token) {
@@ -136,16 +154,18 @@ function App() {
     };
 
     localStorage.setItem("glmAdminSession", JSON.stringify(nextSession));
+    setSessionMessage("");
     setSession(nextSession);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("glmAdminSession");
+    setSessionMessage("");
     setSession(null);
   };
 
   if (!session) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage onLogin={handleLogin} sessionMessage={sessionMessage} />;
   }
 
   return (

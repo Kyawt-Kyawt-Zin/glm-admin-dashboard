@@ -5,7 +5,7 @@ import { login } from "../services/api.js";
 import { validateLoginForm } from "../utils/validation.js";
 import Footer from "./Footer.jsx";
 
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin, sessionMessage }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -65,6 +65,14 @@ function LoginPage({ onLogin }) {
             <p className="mt-2 text-sm text-slate-600">
               Use your Golden Loom Myanmar admin or staff account.
             </p>
+            {sessionMessage && (
+              <p
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800"
+                role="status"
+              >
+                {sessionMessage}
+              </p>
+            )}
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

@@ -2,21 +2,32 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  const headers = { ...options.headers };
 
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Something went wrong");
+  if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
   }
 
-  return result.data;
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+
+  const result = contentType.includes("application/json")
+    ? await response.json()
+    : null;
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.dispatchEvent(new Event("glm-session-expired"));
+    }
+
+    throw new Error(result?.message || "Something went wrong");
+  }
+
+  return result?.data;
 };
 
 export const login = async ({ email, password }) => {
@@ -67,44 +78,23 @@ export const getOrderById = async (token, orderId) => {
 };
 
 export const updateOrderStatus = async (token, orderId, status) => {
-  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+  return request(`/orders/${orderId}/status`, {
     method: "PATCH",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ status }),
   });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Unable to update order status");
-  }
-
-  return result.data;
 };
 
 export const correctOrderStatus = async (token, orderId, status, reason) => {
-  const response = await fetch(
-    `${API_BASE_URL}/orders/${orderId}/status-correction`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status, reason }),
+  return request(`/orders/${orderId}/status-correction`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  );
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Unable to correct order status");
-  }
-
-  return result.data;
+    body: JSON.stringify({ status, reason }),
+  });
 };
 
 export const getProducts = async () => {
@@ -184,21 +174,13 @@ export const createProductVariant = async (token, variant) => {
 };
 
 export const uploadProductImage = async (token, productId, formData) => {
-  const response = await fetch(`${API_BASE_URL}/products/${productId}/images`, {
+  return request(`/products/${productId}/images`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
     body: formData,
   });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Unable to upload product image.");
-  }
-
-  return result.data;
 };
 
 export const getProductVariantsByProductId = async (productId) => {
