@@ -4,6 +4,9 @@ import goldenLoomLogo from "../assets/golden-loom-logo.png";
 import { login } from "../services/api.js";
 import { validateLoginForm } from "../utils/validation.js";
 import Footer from "./Footer.jsx";
+import LoadingDots from "./LoadingDots.jsx";
+
+const MINIMUM_LOGIN_LOADING_TIME = 1100;
 
 function LoginPage({ onLogin, sessionMessage }) {
   const [email, setEmail] = useState("");
@@ -24,6 +27,9 @@ function LoginPage({ onLogin, sessionMessage }) {
       return;
     }
     setErrorMessage("");
+
+    const loginStartedAt = Date.now();
+
     setIsSubmitting(true);
 
     try {
@@ -33,6 +39,19 @@ function LoginPage({ onLogin, sessionMessage }) {
         throw new Error(
           "This dashboard is available only for admin and staff accounts.",
         );
+      }
+
+      const elapsedLoadingTime = Date.now() - loginStartedAt;
+
+      const remainingLoadingTime = Math.max(
+        0,
+        MINIMUM_LOGIN_LOADING_TIME - elapsedLoadingTime,
+      );
+
+      if (remainingLoadingTime > 0) {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, remainingLoadingTime);
+        });
       }
 
       onLogin(loginData);
@@ -144,7 +163,14 @@ function LoginPage({ onLogin, sessionMessage }) {
               disabled={isSubmitting}
               type="submit"
             >
-              {isSubmitting ? "Signing in..." : "Sign in"}
+              {isSubmitting ? (
+                <>
+                  Signing in
+                  <LoadingDots />
+                </>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </form>
         </section>
