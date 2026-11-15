@@ -6,6 +6,7 @@ import {
   updateCategory,
   updateCategoryStatus,
 } from "../services/api.js";
+import LoadingDots from "./LoadingDots.jsx";
 
 export default function CategoryEditPage({ token }) {
   const { categoryId } = useParams();
@@ -165,10 +166,23 @@ export default function CategoryEditPage({ token }) {
         <div className="flex items-center gap-3">
           <span
             className={`text-sm font-semibold ${
-              category.is_active ? "text-emerald-800" : "text-stone-600"
+              isChangingStatus
+                ? "text-amber-700"
+                : category.is_active
+                  ? "text-emerald-800"
+                  : "text-stone-600"
             }`}
           >
-            {category.is_active ? "Active" : "Inactive"}
+            {isChangingStatus ? (
+              <>
+                Updating
+                <LoadingDots />
+              </>
+            ) : category.is_active ? (
+              "Active"
+            ) : (
+              "Inactive"
+            )}
           </span>
 
           <button
@@ -260,7 +274,14 @@ export default function CategoryEditPage({ token }) {
             disabled={isSaving}
             type="submit"
           >
-            {isSaving ? "Saving..." : "Save changes"}
+            {isSaving ? (
+              <>
+                Saving
+                <LoadingDots />
+              </>
+            ) : (
+              "Save changes"
+            )}
           </button>
         </div>
       </form>

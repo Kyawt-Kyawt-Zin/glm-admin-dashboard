@@ -5,8 +5,9 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, ShieldAlert, X } from "lucide-react";
 import goldenLoomEmblem from "./assets/golden-loom-emblem.png";
 import LoginPage from "./components/LoginPage.jsx";
 import Footer from "./components/Footer.jsx";
@@ -25,13 +26,14 @@ import ProductImageUploadPage from "./components/ProductImageUploadPage.jsx";
 import ProductEditPage from "./components/ProductEditPage.jsx";
 import CategoriesPage from "./components/CategoriesPage.jsx";
 import CategoryEditPage from "./components/CategoryEditPage.jsx";
+import CustomersPage from "./components/CustomersPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
   { label: "Orders", to: "/orders" },
   { label: "Products", to: "/products" },
   { label: "Categories", to: "/categories" },
-  { label: "Customers", to: "/customers" },
+  { label: "Customers", to: "/customers", adminOnly: true },
   { label: "Feedback", to: "/feedback" },
   { label: "Inventory", to: "/inventory" },
 ];
@@ -140,6 +142,7 @@ function App() {
   useEffect(() => {
     loadPendingOrderCount();
   }, [loadPendingOrderCount]);
+  const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = location.pathname.endsWith("/history")
     ? "Order status history"
@@ -161,6 +164,13 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("glmAdminSession");
     setSessionMessage("");
+    setIsMobileMenuOpen(false);
+
+    navigate("/", {
+      replace: true,
+      state: null,
+    });
+
     setSession(null);
   };
 
@@ -196,34 +206,38 @@ function App() {
 
         <div className="dashboard-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
           <nav className="mt-8 space-y-1">
-            {menuItems.map((item) => (
-              <NavLink
-                className={({ isActive }) =>
-                  `flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-left text-sm font-medium transition ${
-                    isActive
-                      ? "bg-amber-300 text-emerald-950"
-                      : "text-emerald-100 hover:bg-emerald-900"
-                  }`
-                }
-                onClick={() => setIsMobileMenuOpen(false)}
-                end={item.to === "/"}
-                key={item.to}
-                to={item.to}
-              >
-                <span>{item.label}</span>
+            {menuItems
+              .filter(
+                (item) => !item.adminOnly || session.user.role === "admin",
+              )
+              .map((item) => (
+                <NavLink
+                  className={({ isActive }) =>
+                    `flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-left text-sm font-medium transition ${
+                      isActive
+                        ? "bg-amber-300 text-emerald-950"
+                        : "text-emerald-100 hover:bg-emerald-900"
+                    }`
+                  }
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  end={item.to === "/"}
+                  key={item.to}
+                  to={item.to}
+                >
+                  <span>{item.label}</span>
 
-                {item.to === "/orders" && pendingOrderCount > 0 && (
-                  <span
-                    className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-emerald-950 shadow-sm"
-                    title={`${pendingOrderCount} pending order${
-                      pendingOrderCount === 1 ? "" : "s"
-                    } need confirmation`}
-                  >
-                    {pendingOrderCount > 9 ? "9+" : pendingOrderCount}
-                  </span>
-                )}
-              </NavLink>
-            ))}
+                  {item.to === "/orders" && pendingOrderCount > 0 && (
+                    <span
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-emerald-950 shadow-sm"
+                      title={`${pendingOrderCount} pending order${
+                        pendingOrderCount === 1 ? "" : "s"
+                      } need confirmation`}
+                    >
+                      {pendingOrderCount > 9 ? "9+" : pendingOrderCount}
+                    </span>
+                  )}
+                </NavLink>
+              ))}
           </nav>
         </div>
         <div className="flex h-12 shrink-0 items-center justify-center border-t border-emerald-800 px-3 text-center text-[11px] text-emerald-200">
@@ -288,6 +302,24 @@ function App() {
 
         <section className="dashboard-scrollbar min-h-0 flex-1 overflow-y-auto">
           <div className="p-6 pt-10 md:p-10">
+            {location.pathname === "/" && location.state?.accessNotice && (
+              <div
+                className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                role="status"
+              >
+                <ShieldAlert
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0"
+                  size={19}
+                />
+
+                <p>
+                  <span className="font-semibold">Access restricted. </span>
+                  {location.state.accessNotice}
+                </p>
+              </div>
+            )}
+
             <Routes>
               <Route
                 path="/"
@@ -359,7 +391,20 @@ function App() {
 
               <Route
                 path="/customers"
-                element={<PlaceholderPage title="Customers" />}
+                element={
+                  session.user.role === "admin" ? (
+                    <CustomersPage token={session.token} />
+                  ) : (
+                    <Navigate
+                      replace
+                      state={{
+                        accessNotice:
+                          "Customer directory is available to administrators only.",
+                      }}
+                      to="/"
+                    />
+                  )
+                }
               />
 
               <Route

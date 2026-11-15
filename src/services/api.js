@@ -230,3 +230,27 @@ export const updateProduct = async (token, productId, product) => {
     body: JSON.stringify(product),
   });
 };
+
+export const getCustomers = async (
+  token,
+  { page = 1, limit = 5, search = "", status = "all" } = {},
+) => {
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (search.trim()) {
+    query.set("search", search.trim());
+  }
+
+  if (status !== "all") {
+    query.set("status", status);
+  }
+
+  return request(`/users/customers?${query.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createCategory, getCategories } from "../services/api.js";
+import LoadingDots from "./LoadingDots.jsx";
 
 export default function CategoriesPage({ token }) {
   const navigate = useNavigate();
@@ -178,7 +179,14 @@ export default function CategoriesPage({ token }) {
                 disabled={isCreating}
                 type="submit"
               >
-                {isCreating ? "Creating..." : "Create category"}
+                {isCreating ? (
+                  <>
+                    Creating
+                    <LoadingDots />
+                  </>
+                ) : (
+                  "Create category"
+                )}
               </button>
             </div>
           </div>
