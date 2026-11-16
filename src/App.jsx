@@ -27,6 +27,8 @@ import ProductEditPage from "./components/ProductEditPage.jsx";
 import CategoriesPage from "./components/CategoriesPage.jsx";
 import CategoryEditPage from "./components/CategoryEditPage.jsx";
 import CustomersPage from "./components/CustomersPage.jsx";
+import FeedbacksPage from "./components/FeedbacksPage.jsx";
+import FeedbackDetailPage from "./components/FeedbackDetailPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
@@ -148,7 +150,9 @@ function App() {
     ? "Order status history"
     : location.pathname.startsWith("/orders/")
       ? "Order details"
-      : (pageTitles[location.pathname] ?? "Admin Dashboard");
+      : location.pathname.startsWith("/feedback/")
+        ? "Feedback details"
+        : (pageTitles[location.pathname] ?? "Admin Dashboard");
 
   const handleLogin = (loginData) => {
     const nextSession = {
@@ -409,7 +413,12 @@ function App() {
 
               <Route
                 path="/feedback"
-                element={<PlaceholderPage title="Feedback" />}
+                element={<FeedbacksPage token={session.token} />}
+              />
+
+              <Route
+                path="/feedback/:feedbackId"
+                element={<FeedbackDetailPage token={session.token} />}
               />
 
               <Route path="*" element={<Navigate replace to="/" />} />
