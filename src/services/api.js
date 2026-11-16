@@ -254,3 +254,33 @@ export const getCustomers = async (
     },
   });
 };
+
+export const getFeedbackForManagement = async (token) => {
+  return request("/feedback", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const reviewFeedback = async (
+  token,
+  feedbackId,
+  { status, staffNote },
+) => {
+  return request(`/feedback/${feedbackId}/review`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status, staffNote }),
+  });
+};
+
+export const getFeedbackById = async (token, feedbackId) => {
+  return request(`/feedback/${feedbackId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
