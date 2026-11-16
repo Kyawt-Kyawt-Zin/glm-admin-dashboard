@@ -12,12 +12,17 @@ import goldenLoomEmblem from "./assets/golden-loom-emblem.png";
 import LoginPage from "./components/LoginPage.jsx";
 import Footer from "./components/Footer.jsx";
 import DashboardOverview from "./components/DashboardOverview.jsx";
-import { getOrders } from "./services/api.js";
+import {
+  getOrders,
+  getPendingDeposits,
+  getRefundPendingPayments,
+} from "./services/api.js";
 import RecentOrders from "./components/RecentOrders.jsx";
 import LowStockVariants from "./components/LowstockVariants.jsx";
 import OrdersPage from "./components/OrdersPage.jsx";
 import OrderDetailsPage from "./components/OrderDetailsPage.jsx";
 import OrderStatusHistoryPage from "./components/OrderStatusHistoryPage.jsx";
+import PaymentsPage from "./components/PaymentsPage.jsx";
 import ProductsPage from "./components/ProductsPage.jsx";
 import InventoryPage from "./components/InventoryPage.jsx";
 import ProductCreatePage from "./components/ProductCreatePage.jsx";
@@ -33,6 +38,7 @@ import FeedbackDetailPage from "./components/FeedbackDetailPage.jsx";
 const menuItems = [
   { label: "Dashboard", to: "/" },
   { label: "Orders", to: "/orders" },
+  { label: "Payments", to: "/payments" },
   { label: "Products", to: "/products" },
   { label: "Categories", to: "/categories" },
   { label: "Customers", to: "/customers", adminOnly: true },
@@ -58,6 +64,7 @@ const loadSavedSession = () => {
 const pageTitles = {
   "/": "Admin Dashboard",
   "/orders": "Orders",
+  "/payments": "Payments",
   "/products": "Products",
   "/categories": "Categories",
   "/customers": "Customers",
@@ -102,6 +109,7 @@ function PlaceholderPage({ title }) {
 function App() {
   const [session, setSession] = useState(loadSavedSession);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sessionMessage, setSessionMessage] = useState("");
 
@@ -141,9 +149,32 @@ function App() {
     }
   }, [session?.token]);
 
+  const loadPendingPaymentCount = useCallback(async () => {
+    if (!session?.token) {
+      setPendingPaymentCount(0);
+      return;
+    }
+
+    try {
+      const [pendingDeposits, pendingRefunds] = await Promise.all([
+        getPendingDeposits(session.token),
+        getRefundPendingPayments(session.token),
+      ]);
+
+      setPendingPaymentCount(pendingDeposits.length + pendingRefunds.length);
+    } catch {
+      setPendingPaymentCount(0);
+    }
+  }, [session?.token]);
+
   useEffect(() => {
     loadPendingOrderCount();
   }, [loadPendingOrderCount]);
+
+  useEffect(() => {
+    loadPendingPaymentCount();
+  }, [loadPendingPaymentCount]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = location.pathname.endsWith("/history")
@@ -238,6 +269,17 @@ function App() {
                       } need confirmation`}
                     >
                       {pendingOrderCount > 9 ? "9+" : pendingOrderCount}
+                    </span>
+                  )}
+
+                  {item.to === "/payments" && pendingPaymentCount > 0 && (
+                    <span
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-emerald-950 shadow-sm"
+                      title={`${pendingPaymentCount} payment task${
+                        pendingPaymentCount === 1 ? "" : "s"
+                      } need attention`}
+                    >
+                      {pendingPaymentCount > 9 ? "9+" : pendingPaymentCount}
                     </span>
                   )}
                 </NavLink>
@@ -408,6 +450,16 @@ function App() {
                       to="/"
                     />
                   )
+                }
+              />
+
+              <Route
+                path="/payments"
+                element={
+                  <PaymentsPage
+                    onPaymentTasksChanged={loadPendingPaymentCount}
+                    token={session.token}
+                  />
                 }
               />
 

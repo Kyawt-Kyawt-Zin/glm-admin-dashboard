@@ -284,3 +284,47 @@ export const getFeedbackById = async (token, feedbackId) => {
     },
   });
 };
+
+export const getPendingDeposits = async (token) => {
+  return request("/payments/pending-deposits", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const confirmDeposit = async (
+  token,
+  paymentId,
+  { transactionReference, notes },
+) => {
+  return request(`/payments/${paymentId}/confirm`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ transactionReference, notes }),
+  });
+};
+
+export const getRefundPendingPayments = async (token) => {
+  return request("/payments/refund-pending", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const refundDeposit = async (
+  token,
+  paymentId,
+  { refundReference, refundNotes },
+) => {
+  return request(`/payments/${paymentId}/refund`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ refundReference, refundNotes }),
+  });
+};
