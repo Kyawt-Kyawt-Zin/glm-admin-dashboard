@@ -14,6 +14,7 @@ import Footer from "./components/Footer.jsx";
 import DashboardOverview from "./components/DashboardOverview.jsx";
 import {
   getOrders,
+  getOrderChangeRequests,
   getPendingDeposits,
   getRefundPendingPayments,
 } from "./services/api.js";
@@ -34,10 +35,16 @@ import CategoryEditPage from "./components/CategoryEditPage.jsx";
 import CustomersPage from "./components/CustomersPage.jsx";
 import FeedbacksPage from "./components/FeedbacksPage.jsx";
 import FeedbackDetailPage from "./components/FeedbackDetailPage.jsx";
+import OrderChangeRequestsPage from "./components/OrderChangeRequestsPage.jsx";
+import OrderChangeRequestDetailPage from "./components/OrderChangeRequestDetailPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
   { label: "Orders", to: "/orders" },
+  {
+    label: "Requests",
+    to: "/order-change-requests",
+  },
   { label: "Payments", to: "/payments" },
   { label: "Products", to: "/products" },
   { label: "Categories", to: "/categories" },
@@ -64,6 +71,7 @@ const loadSavedSession = () => {
 const pageTitles = {
   "/": "Admin Dashboard",
   "/orders": "Orders",
+  "/order-change-requests": "Requests",
   "/payments": "Payments",
   "/products": "Products",
   "/categories": "Categories",
@@ -110,6 +118,7 @@ function App() {
   const [session, setSession] = useState(loadSavedSession);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sessionMessage, setSessionMessage] = useState("");
 
@@ -167,6 +176,25 @@ function App() {
     }
   }, [session?.token]);
 
+  const loadPendingRequestCount = useCallback(async () => {
+    if (!session?.token) {
+      setPendingRequestCount(0);
+      return;
+    }
+
+    try {
+      const requests = await getOrderChangeRequests(session.token);
+
+      const count = requests.filter(
+        (request) => request.status === "pending",
+      ).length;
+
+      setPendingRequestCount(count);
+    } catch {
+      setPendingRequestCount(0);
+    }
+  }, [session?.token]);
+
   useEffect(() => {
     loadPendingOrderCount();
   }, [loadPendingOrderCount]);
@@ -183,7 +211,9 @@ function App() {
       ? "Order details"
       : location.pathname.startsWith("/feedback/")
         ? "Feedback details"
-        : (pageTitles[location.pathname] ?? "Admin Dashboard");
+        : location.pathname.startsWith("/order-change-requests/")
+          ? "Request details"
+          : pageTitles[location.pathname] || "Admin Dashboard";
 
   const handleLogin = (loginData) => {
     const nextSession = {
@@ -271,6 +301,18 @@ function App() {
                       {pendingOrderCount > 9 ? "9+" : pendingOrderCount}
                     </span>
                   )}
+
+                  {item.to === "/order-change-requests" &&
+                    pendingRequestCount > 0 && (
+                      <span
+                        className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold text-emerald-900"
+                        title={`${pendingRequestCount} request${
+                          pendingRequestCount === 1 ? "" : "s"
+                        } need attention`}
+                      >
+                        {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                      </span>
+                    )}
 
                   {item.to === "/payments" && pendingPaymentCount > 0 && (
                     <span
@@ -398,6 +440,36 @@ function App() {
                 }
               />
 
+              <Route
+                path="/order-change-requests"
+                element={
+                  <OrderChangeRequestsPage
+                    token={session.token}
+                    onRequestTasksChanged={loadPendingRequestCount}
+                  />
+                }
+              />
+
+              <Route
+                path="/order-change-requests/:requestId"
+                element={
+                  <OrderChangeRequestDetailPage
+                    token={session.token}
+                    onRequestTasksChanged={loadPendingRequestCount}
+                  />
+                }
+              />
+
+              <Route
+                path="/payments"
+                element={
+                  <PaymentsPage
+                    onPaymentTasksChanged={loadPendingPaymentCount}
+                    token={session.token}
+                  />
+                }
+              />
+
               <Route path="/products" element={<ProductsPage />} />
 
               <Route
@@ -450,16 +522,6 @@ function App() {
                       to="/"
                     />
                   )
-                }
-              />
-
-              <Route
-                path="/payments"
-                element={
-                  <PaymentsPage
-                    onPaymentTasksChanged={loadPendingPaymentCount}
-                    token={session.token}
-                  />
                 }
               />
 

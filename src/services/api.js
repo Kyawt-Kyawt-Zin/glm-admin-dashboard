@@ -328,3 +328,36 @@ export const refundDeposit = async (
     body: JSON.stringify({ refundReference, refundNotes }),
   });
 };
+
+export const getOrderChangeRequests = async (token) => {
+  return request("/order-change-requests", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const getOrderChangeRequestById = async (token, requestId) => {
+  return request(`/order-change-requests/${requestId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const reviewOrderChangeRequest = async (
+  token,
+  requestId,
+  { status, staffComment },
+) => {
+  return request(`/order-change-requests/${requestId}/review`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      status,
+      staffComment,
+    }),
+  });
+};
