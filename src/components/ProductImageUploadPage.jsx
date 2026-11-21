@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getProducts,
   getProductVariantsByProductId,
@@ -9,10 +9,11 @@ import SelectChevron from "./SelectChevron.jsx";
 
 export default function ProductImageUploadPage({ token }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState({
-    productId: "",
+    productId: searchParams.get("productId") || "",
     variantId: "",
     altText: "",
     sortOrder: "0",

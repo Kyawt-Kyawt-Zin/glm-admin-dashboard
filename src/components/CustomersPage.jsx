@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Eye,
   Search,
+  Power,
   Users,
 } from "lucide-react";
-import { getCustomers } from "../services/api.js";
+import { getCustomers, updateCustomerActiveStatus } from "../services/api.js";
 import SelectChevron from "./SelectChevron.jsx";
 
 const PAGE_LIMIT = 5;
@@ -38,6 +41,23 @@ export default function CustomersPage({ token }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [notification, setNotification] = useState(null);
+  const [updatingCustomerId, setUpdatingCustomerId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!notification) {
+      return undefined;
+    }
+
+    const notificationTimer = window.setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(notificationTimer);
+    };
+  }, [notification]);
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -81,6 +101,54 @@ export default function CustomersPage({ token }) {
     const safePage = Math.min(Math.max(nextPage, 1), pagination.totalPages);
 
     setPage(safePage);
+  };
+
+  const handleStatusChange = async (customer) => {
+    const nextIsActive = !Boolean(customer.is_active);
+    const actionLabel = nextIsActive ? "activate" : "deactivate";
+
+    const confirmed = window.confirm(
+      `Do you want to ${actionLabel} ${customer.full_name}'s account?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      setNotification(null);
+      setUpdatingCustomerId(customer.id);
+
+      const updatedCustomer = await updateCustomerActiveStatus(
+        token,
+        customer.id,
+        nextIsActive,
+      );
+
+      setCustomers((currentCustomers) =>
+        currentCustomers.map((currentCustomer) =>
+          currentCustomer.id === updatedCustomer.id
+            ? updatedCustomer
+            : currentCustomer,
+        ),
+      );
+
+      const isActive = Boolean(updatedCustomer.is_active);
+
+      setNotification({
+        message: `${updatedCustomer.full_name} is now ${
+          isActive ? "active" : "inactive"
+        }.`,
+        tone: isActive ? "success" : "inactive",
+      });
+    } catch (error) {
+      setErrorMessage(
+        error.message || "Unable to update the customer account status.",
+      );
+    } finally {
+      setUpdatingCustomerId(null);
+    }
   };
 
   return (
@@ -186,6 +254,19 @@ export default function CustomersPage({ token }) {
         </p>
       )}
 
+      {notification && (
+        <div
+          className={`fixed right-4 top-28 z-[60] max-w-sm rounded-xl p-4 text-sm shadow-lg ${
+            notification.tone === "success"
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-rose-50 text-rose-800"
+          }`}
+          role="status"
+        >
+          {notification.message}
+        </div>
+      )}
+
       {!isLoading && !errorMessage && customers.length === 0 && (
         <p className="mt-6 rounded-xl bg-stone-50 p-4 text-sm text-slate-600">
           No customers match the current search and filter.
@@ -202,6 +283,10 @@ export default function CustomersPage({ token }) {
                   <th className="px-4 py-3 font-semibold">Phone</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Joined</th>
+                  <th className="px-4 py-3 text-center font-semibold">
+                    History
+                  </th>
+                  <th className="px-4 py-3 font-semibold">Account</th>
                 </tr>
               </thead>
 
@@ -230,7 +315,7 @@ export default function CustomersPage({ token }) {
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                           customer.is_active
                             ? "bg-emerald-100 text-emerald-800"
-                            : "bg-stone-200 text-stone-700"
+                            : "bg-rose-100 text-rose-700"
                         }`}
                       >
                         {customer.is_active ? "Active" : "Inactive"}
@@ -239,6 +324,39 @@ export default function CustomersPage({ token }) {
 
                     <td className="px-4 py-4 text-slate-600">
                       {formatJoinedDate(customer.created_at)}
+                    </td>
+
+                    <td className="px-4 py-4 text-center">
+                      <button
+                        aria-label={`View ${customer.full_name}'s order history`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-800 text-emerald-900 transition hover:bg-emerald-50"
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                        title="View customer order history"
+                        type="button"
+                      >
+                        <Eye aria-hidden="true" size={17} />
+                      </button>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <button
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          customer.is_active
+                            ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                        }`}
+                        disabled={updatingCustomerId === customer.id}
+                        onClick={() => handleStatusChange(customer)}
+                        type="button"
+                      >
+                        <Power size={15} />
+
+                        {updatingCustomerId === customer.id
+                          ? "Saving..."
+                          : customer.is_active
+                            ? "Deactivate"
+                            : "Activate"}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -12,6 +12,7 @@ import goldenLoomEmblem from "./assets/golden-loom-emblem.png";
 import LoginPage from "./components/LoginPage.jsx";
 import Footer from "./components/Footer.jsx";
 import DashboardOverview from "./components/DashboardOverview.jsx";
+import DashboardAnalytics from "./components/DashboardAnalytics.jsx";
 import {
   getOrders,
   getOrderChangeRequests,
@@ -33,6 +34,7 @@ import ProductEditPage from "./components/ProductEditPage.jsx";
 import CategoriesPage from "./components/CategoriesPage.jsx";
 import CategoryEditPage from "./components/CategoryEditPage.jsx";
 import CustomersPage from "./components/CustomersPage.jsx";
+import CustomerOrderHistoryPage from "./components/CustomerOrderHistoryPage.jsx";
 import FeedbacksPage from "./components/FeedbacksPage.jsx";
 import FeedbackDetailPage from "./components/FeedbackDetailPage.jsx";
 import OrderChangeRequestsPage from "./components/OrderChangeRequestsPage.jsx";
@@ -76,6 +78,7 @@ const pageTitles = {
   "/products": "Products",
   "/categories": "Categories",
   "/customers": "Customers",
+
   "/feedback": "Feedback",
   "/inventory": "Inventory",
   "/products/new": "Add product",
@@ -99,6 +102,7 @@ function DashboardPage({ token }) {
       </div>
 
       <DashboardOverview token={token} />
+      <DashboardAnalytics token={token} />
       <RecentOrders token={token} />
       <LowStockVariants token={token} />
     </>
@@ -209,11 +213,13 @@ function App() {
     ? "Order status history"
     : location.pathname.startsWith("/orders/")
       ? "Order details"
-      : location.pathname.startsWith("/feedback/")
-        ? "Feedback details"
-        : location.pathname.startsWith("/order-change-requests/")
-          ? "Request details"
-          : pageTitles[location.pathname] || "Admin Dashboard";
+      : location.pathname.startsWith("/customers/")
+        ? "Customer order history"
+        : location.pathname.startsWith("/feedback/")
+          ? "Feedback details"
+          : location.pathname.startsWith("/order-change-requests/")
+            ? "Request details"
+            : pageTitles[location.pathname] || "Admin Dashboard";
 
   const handleLogin = (loginData) => {
     const nextSession = {
@@ -518,6 +524,24 @@ function App() {
                       state={{
                         accessNotice:
                           "Customer directory is available to administrators only.",
+                      }}
+                      to="/"
+                    />
+                  )
+                }
+              />
+
+              <Route
+                path="/customers/:customerId"
+                element={
+                  session.user.role === "admin" ? (
+                    <CustomerOrderHistoryPage token={session.token} />
+                  ) : (
+                    <Navigate
+                      replace
+                      state={{
+                        accessNotice:
+                          "Customer history is available to administrators only.",
                       }}
                       to="/"
                     />

@@ -45,6 +45,14 @@ export const getDashboardOverview = async (token) => {
   });
 };
 
+export const getDashboardAnalytics = async (token) => {
+  return request("/dashboard/analytics", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
 export const getRecentOrders = async (token) => {
   return request("/dashboard/recent-orders", {
     headers: {
@@ -183,6 +191,34 @@ export const uploadProductImage = async (token, productId, formData) => {
   });
 };
 
+export const getProductImages = async (productId) => {
+  return request(`/products/${productId}/images`);
+};
+
+export const updateProductImage = async (
+  token,
+  productId,
+  imageId,
+  imageDetails,
+) => {
+  return request(`/products/${productId}/images/${imageId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(imageDetails),
+  });
+};
+
+export const deleteProductImage = async (token, productId, imageId) => {
+  return request(`/products/${productId}/images/${imageId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
 export const getProductVariantsByProductId = async (productId) => {
   return request(`/products/${productId}/variants`);
 };
@@ -252,6 +288,28 @@ export const getCustomers = async (
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+};
+
+export const getCustomerOrderHistory = async (token, customerId) => {
+  return request(`/users/${customerId}/orders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const updateCustomerActiveStatus = async (
+  token,
+  customerId,
+  isActive,
+) => {
+  return request(`/users/${customerId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ isActive }),
   });
 };
 

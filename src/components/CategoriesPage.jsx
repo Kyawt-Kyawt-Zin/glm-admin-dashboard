@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Pencil, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createCategory, getCategories } from "../services/api.js";
 import LoadingDots from "./LoadingDots.jsx";
@@ -260,12 +260,13 @@ export default function CategoriesPage({ token }) {
 
                   <td className="px-4 py-4 text-right">
                     <button
-                      className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                      aria-label={`Edit ${category.name}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-800 text-emerald-900 transition hover:bg-emerald-50"
                       onClick={() => navigate(`/categories/${category.id}`)}
+                      title="Edit category"
                       type="button"
                     >
-                      Edit
-                      <ArrowRight size={16} strokeWidth={2.5} />
+                      <Pencil aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </td>
                 </tr>

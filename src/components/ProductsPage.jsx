@@ -147,7 +147,7 @@ function ProductsPage() {
                 className="flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white"
                 key={product.id}
               >
-                <div className="flex h-48 items-center justify-center bg-stone-100">
+                <div className="relative flex h-48 items-center justify-center bg-stone-100">
                   {imageUrl ? (
                     <img
                       alt={product.name}
@@ -157,6 +157,15 @@ function ProductsPage() {
                   ) : (
                     <p className="text-sm text-slate-500">No primary image</p>
                   )}
+                  <button
+                    aria-label={`Edit ${product.name}`}
+                    className="absolute right-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-transparent text-sky-400 drop-shadow-md transition hover:bg-sky-400/15 hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                    onClick={() => navigate(`/products/${product.id}`)}
+                    title="Edit product"
+                    type="button"
+                  >
+                    <Pencil aria-hidden="true" size={16} strokeWidth={2.5} />
+                  </button>
                 </div>
 
                 <div className="flex flex-1 flex-col p-5">
@@ -193,17 +202,6 @@ function ProductsPage() {
                     <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-slate-700">
                       /{product.slug}
                     </span>
-                  </div>
-
-                  <div className="mt-auto pt-5">
-                    <button
-                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-700 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-                      onClick={() => navigate(`/products/${product.id}`)}
-                      type="button"
-                    >
-                      <Pencil size={16} strokeWidth={2.5} />
-                      Edit product
-                    </button>
                   </div>
                 </div>
               </article>
