@@ -351,6 +351,14 @@ export const getPendingDeposits = async (token) => {
   });
 };
 
+export const getPaymentById = async (token, paymentId) => {
+  return request(`/payments/${paymentId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
 export const confirmDeposit = async (
   token,
   paymentId,

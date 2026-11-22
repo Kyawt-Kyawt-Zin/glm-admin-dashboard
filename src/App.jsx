@@ -25,6 +25,7 @@ import OrdersPage from "./components/OrdersPage.jsx";
 import OrderDetailsPage from "./components/OrderDetailsPage.jsx";
 import OrderStatusHistoryPage from "./components/OrderStatusHistoryPage.jsx";
 import PaymentsPage from "./components/PaymentsPage.jsx";
+import PaymentDetailsPage from "./components/PaymentDetailsPage.jsx";
 import ProductsPage from "./components/ProductsPage.jsx";
 import InventoryPage from "./components/InventoryPage.jsx";
 import ProductCreatePage from "./components/ProductCreatePage.jsx";
@@ -213,13 +214,15 @@ function App() {
     ? "Order status history"
     : location.pathname.startsWith("/orders/")
       ? "Order details"
-      : location.pathname.startsWith("/customers/")
-        ? "Customer order history"
-        : location.pathname.startsWith("/feedback/")
-          ? "Feedback details"
-          : location.pathname.startsWith("/order-change-requests/")
-            ? "Request details"
-            : pageTitles[location.pathname] || "Admin Dashboard";
+      : location.pathname.startsWith("/payments/")
+        ? "Payment details"
+        : location.pathname.startsWith("/customers/")
+          ? "Customer order history"
+          : location.pathname.startsWith("/feedback/")
+            ? "Feedback details"
+            : location.pathname.startsWith("/order-change-requests/")
+              ? "Request details"
+              : pageTitles[location.pathname] || "Admin Dashboard";
 
   const handleLogin = (loginData) => {
     const nextSession = {
@@ -470,6 +473,16 @@ function App() {
                 path="/payments"
                 element={
                   <PaymentsPage
+                    onPaymentTasksChanged={loadPendingPaymentCount}
+                    token={session.token}
+                  />
+                }
+              />
+
+              <Route
+                path="/payments/:paymentId"
+                element={
+                  <PaymentDetailsPage
                     onPaymentTasksChanged={loadPendingPaymentCount}
                     token={session.token}
                   />
