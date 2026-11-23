@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -26,6 +27,47 @@ const statusColors = {
   cancelled: "#dc2626",
 };
 
+const fallbackStatusDefinitions = [
+  { status: "pending", label: "Pending" },
+  { status: "confirmed", label: "Confirmed" },
+  { status: "processing", label: "Processing" },
+  { status: "ready_for_delivery", label: "Ready for delivery" },
+  { status: "out_for_delivery", label: "Out for delivery" },
+  { status: "ready_for_pickup", label: "Ready for pickup" },
+  { status: "delivered", label: "Delivered" },
+  { status: "picked_up", label: "Picked up" },
+  { status: "cancelled", label: "Cancelled" },
+];
+
+const formatDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getCurrentWeekStart = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  today.setDate(today.getDate() - 6);
+
+  return formatDateKey(today);
+};
+
+const getDateFromKey = (dateKey) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+};
+
+const moveDateByDays = (dateKey, dayCount) => {
+  const date = getDateFromKey(dateKey);
+  date.setDate(date.getDate() + dayCount);
+
+  return formatDateKey(date);
+};
+
 const formatActivityDate = (dateValue) => {
   if (!dateValue) {
     return "";
@@ -35,21 +77,43 @@ const formatActivityDate = (dateValue) => {
     weekday: "short",
     day: "numeric",
     month: "short",
-  }).format(new Date(`${dateValue}T00:00:00`));
+  }).format(getDateFromKey(dateValue));
+};
+
+const formatWeekRange = (weekStart, weekEnd) => {
+  if (!weekStart || !weekEnd) {
+    return "";
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-AE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return `${formatter.format(getDateFromKey(weekStart))} – ${formatter.format(
+    getDateFromKey(weekEnd),
+  )}`;
 };
 
 function DashboardAnalytics({ token }) {
   const [analytics, setAnalytics] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [weekStart, setWeekStart] = useState(getCurrentWeekStart);
+
+  const currentWeekStart = useMemo(() => getCurrentWeekStart(), []);
+  const isCurrentWeek = weekStart >= currentWeekStart;
 
   useEffect(() => {
     let isCurrentRequest = true;
 
     const loadAnalytics = async () => {
       try {
+        setIsLoading(true);
         setErrorMessage("");
 
-        const analyticsData = await getDashboardAnalytics(token);
+        const analyticsData = await getDashboardAnalytics(token, weekStart);
 
         if (isCurrentRequest) {
           setAnalytics(analyticsData);
@@ -57,6 +121,10 @@ function DashboardAnalytics({ token }) {
       } catch (error) {
         if (isCurrentRequest) {
           setErrorMessage(error.message);
+        }
+      } finally {
+        if (isCurrentRequest) {
+          setIsLoading(false);
         }
       }
     };
@@ -66,7 +134,7 @@ function DashboardAnalytics({ token }) {
     return () => {
       isCurrentRequest = false;
     };
-  }, [token]);
+  }, [token, weekStart]);
 
   if (errorMessage) {
     return (
@@ -79,8 +147,10 @@ function DashboardAnalytics({ token }) {
   const activityData = (analytics?.order_activity || []).map((item) => ({
     ...item,
     label: formatActivityDate(item.date),
-    order_count: Number(item.order_count),
   }));
+
+  const statusDefinitions =
+    analytics?.status_definitions || fallbackStatusDefinitions;
 
   const statusData = (analytics?.order_statuses || [])
     .map((item) => ({
@@ -89,25 +159,67 @@ function DashboardAnalytics({ token }) {
     }))
     .filter((item) => item.order_count > 0);
 
+  const displayedWeekStart = analytics?.week_start || weekStart;
+  const displayedWeekEnd =
+    analytics?.week_end || moveDateByDays(displayedWeekStart, 6);
+
+  const changeWeek = (dayOffset) => {
+    const nextWeekStart = moveDateByDays(weekStart, dayOffset);
+
+    setWeekStart(
+      nextWeekStart > currentWeekStart ? currentWeekStart : nextWeekStart,
+    );
+  };
+
   return (
     <section className="mt-8 grid gap-6 xl:grid-cols-5">
       <article className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-3">
-        <div>
-          <p className="text-sm font-semibold text-amber-700">ORDER ACTIVITY</p>
-          <h3 className="mt-1 text-xl font-bold">Orders created this week</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            New orders created during the most recent seven days.
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-amber-700">
+              DAILY ORDER REPORT
+            </p>
+            <h3 className="mt-1 text-xl font-bold">Orders by status</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Orders created each day, grouped by their current operational status.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start rounded-xl border border-emerald-100 bg-emerald-50 p-1">
+            <button
+              aria-label="Show previous seven days"
+              className="rounded-lg p-2 text-emerald-800 transition hover:bg-white hover:shadow-sm"
+              onClick={() => changeWeek(-7)}
+              type="button"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="min-w-44 text-center text-xs font-semibold text-emerald-900">
+              {formatWeekRange(displayedWeekStart, displayedWeekEnd)}
+            </span>
+            <button
+              aria-label="Show next seven days"
+              className="rounded-lg p-2 text-emerald-800 transition hover:bg-white hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-35"
+              disabled={isCurrentWeek}
+              onClick={() => changeWeek(7)}
+              type="button"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 h-[280px]">
-          {analytics ? (
+        <div className="mt-6 h-[340px]">
+          {!isLoading ? (
             <ResponsiveContainer height="100%" width="100%">
-              <BarChart data={activityData}>
+              <BarChart data={activityData} barCategoryGap="20%">
                 <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: "#64748b", fontSize: 12 }}
+                  interval={0}
+                  minTickGap={0}
+                  tick={{ fill: "#64748b", fontSize: 11 }}
+                  tickMargin={8}
                 />
                 <YAxis
                   allowDecimals={false}
@@ -115,23 +227,30 @@ function DashboardAnalytics({ token }) {
                 />
                 <Tooltip
                   cursor={{ fill: "#ecfdf5" }}
-                  formatter={(value) => [value, "Orders created"]}
+                  formatter={(value, name) => [value, name]}
                   contentStyle={{
                     border: "1px solid #d1fae5",
                     borderRadius: "12px",
                   }}
                 />
-                <Bar
-                  dataKey="order_count"
-                  fill="#047857"
-                  name="Orders created"
-                  radius={[8, 8, 0, 0]}
+                <Legend
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
                 />
+                {statusDefinitions.map(({ status, label }) => (
+                  <Bar
+                    dataKey={status}
+                    fill={statusColors[status] || "#64748b"}
+                    key={status}
+                    name={label}
+                    stackId="order-statuses"
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
-              Loading order activity…
+              Loading daily order report…
             </div>
           )}
         </div>
@@ -147,7 +266,7 @@ function DashboardAnalytics({ token }) {
         </div>
 
         <div className="mt-6 h-[280px]">
-          {!analytics ? (
+          {isLoading ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
               Loading order statuses…
             </div>

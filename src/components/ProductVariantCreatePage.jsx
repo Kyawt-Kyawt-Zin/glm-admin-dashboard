@@ -120,7 +120,7 @@ export default function ProductVariantCreatePage({ token }) {
         depositPercentage: isPreorder ? 20 : null,
       });
 
-      navigate("/inventory");
+      navigate(`/products/${form.productId}`);
     } catch (error) {
       setErrorMessage(error.message || "Unable to create product variant.");
     } finally {

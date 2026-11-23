@@ -40,6 +40,7 @@ import FeedbacksPage from "./components/FeedbacksPage.jsx";
 import FeedbackDetailPage from "./components/FeedbackDetailPage.jsx";
 import OrderChangeRequestsPage from "./components/OrderChangeRequestsPage.jsx";
 import OrderChangeRequestDetailPage from "./components/OrderChangeRequestDetailPage.jsx";
+import SettingsPage from "./components/SettingsPage.jsx";
 
 const menuItems = [
   { label: "Dashboard", to: "/" },
@@ -54,6 +55,7 @@ const menuItems = [
   { label: "Customers", to: "/customers", adminOnly: true },
   { label: "Feedback", to: "/feedback" },
   { label: "Inventory", to: "/inventory" },
+  { label: "Settings", to: "/settings", adminOnly: true },
 ];
 
 const loadSavedSession = () => {
@@ -85,6 +87,7 @@ const pageTitles = {
   "/products/new": "Add product",
   "/products/variants/new": "Add variant",
   "/products/images/new": "Upload product image",
+  "/settings": "Settings",
 };
 
 function DashboardPage({ token }) {
@@ -514,6 +517,24 @@ function App() {
               <Route
                 path="/inventory"
                 element={<InventoryPage token={session.token} />}
+              />
+
+              <Route
+                path="/settings"
+                element={
+                  session.user.role === "admin" ? (
+                    <SettingsPage token={session.token} />
+                  ) : (
+                    <Navigate
+                      replace
+                      state={{
+                        accessNotice:
+                          "Business settings are available to administrators only.",
+                      }}
+                      to="/"
+                    />
+                  )
+                }
               />
 
               <Route

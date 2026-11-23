@@ -45,8 +45,12 @@ export const getDashboardOverview = async (token) => {
   });
 };
 
-export const getDashboardAnalytics = async (token) => {
-  return request("/dashboard/analytics", {
+export const getDashboardAnalytics = async (token, weekStart) => {
+  const query = weekStart
+    ? `?${new URLSearchParams({ weekStart }).toString()}`
+    : "";
+
+  return request(`/dashboard/analytics${query}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -178,6 +182,39 @@ export const createProductVariant = async (token, variant) => {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(variant),
+  });
+};
+
+export const updateProductVariant = async (token, variantId, variant) => {
+  return request(`/product-variants/${variantId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(variant),
+  });
+};
+
+export const deactivateProductVariant = async (token, variantId) => {
+  return request(`/product-variants/${variantId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const updateProductVariantStatus = async (
+  token,
+  variantId,
+  isActive,
+) => {
+  return request(`/product-variants/${variantId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ isActive }),
   });
 };
 
@@ -359,6 +396,29 @@ export const getPaymentById = async (token, paymentId) => {
   });
 };
 
+export const getPaymentProofBlob = async (token, paymentId) => {
+  const response = await fetch(`${API_BASE_URL}/payments/${paymentId}/proof`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.dispatchEvent(new Event("glm-session-expired"));
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    const result = contentType.includes("application/json")
+      ? await response.json()
+      : null;
+
+    throw new Error(result?.message || "Unable to load payment proof");
+  }
+
+  return response.blob();
+};
+
 export const confirmDeposit = async (
   token,
   paymentId,
@@ -425,5 +485,43 @@ export const reviewOrderChangeRequest = async (
       status,
       staffComment,
     }),
+  });
+};
+
+export const getBankAccountsForManagement = async (token) => {
+  return request("/bank-accounts/management", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const createBankAccount = async (token, account) => {
+  return request("/bank-accounts", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(account),
+  });
+};
+
+export const updateBankAccount = async (token, accountId, account) => {
+  return request(`/bank-accounts/${accountId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(account),
+  });
+};
+
+export const updateBankAccountStatus = async (token, accountId, isActive) => {
+  return request(`/bank-accounts/${accountId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ isActive }),
   });
 };

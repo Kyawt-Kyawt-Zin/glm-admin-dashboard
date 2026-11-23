@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, ImagePlus, Plus, Star, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  Pencil,
+  Plus,
+  Power,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getCategories,
@@ -10,6 +18,8 @@ import {
   deleteProductImage,
   updateProductImage,
   updateProduct,
+  updateProductVariant,
+  updateProductVariantStatus,
 } from "../services/api.js";
 import SelectChevron from "./SelectChevron.jsx";
 
@@ -38,6 +48,20 @@ export default function ProductEditPage({ token }) {
   const [imageMessage, setImageMessage] = useState("");
   const [imageErrorMessage, setImageErrorMessage] = useState("");
   const [pendingDeleteImageId, setPendingDeleteImageId] = useState(null);
+  const [editingVariant, setEditingVariant] = useState(null);
+  const [variantForm, setVariantForm] = useState({
+    color: "",
+    size: "",
+    sku: "",
+    price: "",
+    fulfillmentType: "in_stock",
+    stockQuantity: "0",
+    preorderLeadDays: "14",
+  });
+  const [variantMessage, setVariantMessage] = useState("");
+  const [variantErrorMessage, setVariantErrorMessage] = useState("");
+  const [isVariantSaving, setIsVariantSaving] = useState(false);
+  const [variantActionId, setVariantActionId] = useState(null);
 
   useEffect(() => {
     const loadProductPage = async () => {
@@ -124,6 +148,119 @@ export default function ProductEditPage({ token }) {
   const reloadImages = async () => {
     const imagesData = await getProductImages(product.id);
     setImages(imagesData);
+  };
+
+  const reloadVariants = async () => {
+    const variantsData = await getProductVariantsByProductId(product.id);
+    setVariants(variantsData.variants);
+  };
+
+  const updateVariantForm = (field, value) => {
+    setVariantForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  };
+
+  const startVariantEdit = (variant) => {
+    setEditingVariant(variant);
+    setVariantMessage("");
+    setVariantErrorMessage("");
+
+    setVariantForm({
+      color: variant.color,
+      size: variant.size,
+      sku: variant.sku,
+      price: String(variant.price),
+      fulfillmentType: variant.fulfillment_type,
+      stockQuantity: String(variant.stock_quantity),
+      preorderLeadDays: String(variant.preorder_lead_days || 14),
+    });
+  };
+
+  const cancelVariantEdit = () => {
+    setEditingVariant(null);
+    setVariantErrorMessage("");
+  };
+
+  const handleSaveVariant = async (event) => {
+    event.preventDefault();
+
+    if (!editingVariant) {
+      return;
+    }
+
+    try {
+      setVariantErrorMessage("");
+      setVariantMessage("");
+      setIsVariantSaving(true);
+
+      await updateProductVariant(token, editingVariant.id, {
+        productId: product.id,
+        color: variantForm.color.trim(),
+        size: variantForm.size.trim(),
+        sku: variantForm.sku.trim(),
+        price: Number(variantForm.price),
+        fulfillmentType: variantForm.fulfillmentType,
+        stockQuantity:
+          variantForm.fulfillmentType === "preorder"
+            ? 0
+            : Number(variantForm.stockQuantity),
+        preorderLeadDays:
+          variantForm.fulfillmentType === "preorder"
+            ? Number(variantForm.preorderLeadDays)
+            : null,
+        isActive: Boolean(editingVariant.is_active),
+      });
+
+      await reloadVariants();
+
+      setEditingVariant(null);
+      setVariantMessage(
+        `${variantForm.color.trim()} · ${variantForm.size.trim()} was updated successfully.`,
+      );
+    } catch (error) {
+      setVariantErrorMessage(
+        error.message || "Unable to update this product variant.",
+      );
+    } finally {
+      setIsVariantSaving(false);
+    }
+  };
+
+  const handleVariantStatusChange = async (variant) => {
+    const nextIsActive = !Boolean(variant.is_active);
+    const actionLabel = nextIsActive ? "activate" : "deactivate";
+
+    const shouldContinue = window.confirm(
+      `Do you want to ${actionLabel} ${variant.color} · ${variant.size}?`,
+    );
+
+    if (!shouldContinue) {
+      return;
+    }
+
+    try {
+      setVariantActionId(variant.id);
+      setVariantErrorMessage("");
+      setVariantMessage("");
+
+      await updateProductVariantStatus(token, variant.id, nextIsActive);
+
+      await reloadVariants();
+
+      setVariantMessage(
+        `${variant.color} · ${variant.size} is now ${
+          nextIsActive ? "active" : "inactive"
+        }.`,
+      );
+    } catch (error) {
+      setVariantErrorMessage(
+        error.message || "Unable to update this variant status.",
+      );
+    } finally {
+      setVariantActionId(null);
+    }
   };
 
   const saveImageDetails = async (image, changes, successText) => {
@@ -388,6 +525,159 @@ export default function ProductEditPage({ token }) {
           </button>
         </div>
 
+        {variantErrorMessage && (
+          <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {variantErrorMessage}
+          </p>
+        )}
+
+        {variantMessage && (
+          <p className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {variantMessage}
+          </p>
+        )}
+
+        {editingVariant && (
+          <form
+            className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"
+            onSubmit={handleSaveVariant}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold tracking-wide text-emerald-800">
+                  EDIT VARIANT
+                </p>
+                <h5 className="mt-1 text-lg font-bold text-emerald-950">
+                  {editingVariant.color} · {editingVariant.size}
+                </h5>
+              </div>
+
+              <button
+                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                onClick={cancelVariantEdit}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-700">
+                Colour
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                  onChange={(event) =>
+                    updateVariantForm("color", event.target.value)
+                  }
+                  required
+                  value={variantForm.color}
+                />
+              </label>
+
+              <label className="text-sm font-semibold text-slate-700">
+                Size
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                  onChange={(event) =>
+                    updateVariantForm("size", event.target.value)
+                  }
+                  required
+                  value={variantForm.size}
+                />
+              </label>
+
+              <label className="text-sm font-semibold text-slate-700">
+                SKU
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 uppercase outline-none focus:border-emerald-600"
+                  onChange={(event) =>
+                    updateVariantForm("sku", event.target.value)
+                  }
+                  required
+                  value={variantForm.sku}
+                />
+              </label>
+
+              <label className="text-sm font-semibold text-slate-700">
+                Price (AED)
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                  min="0.25"
+                  onChange={(event) =>
+                    updateVariantForm("price", event.target.value)
+                  }
+                  required
+                  step="0.25"
+                  type="number"
+                  value={variantForm.price}
+                />
+              </label>
+
+              <label className="text-sm font-semibold text-slate-700">
+                Fulfilment type
+                <select
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                  onChange={(event) => {
+                    const fulfillmentType = event.target.value;
+
+                    setVariantForm((currentForm) => ({
+                      ...currentForm,
+                      fulfillmentType,
+                      stockQuantity:
+                        fulfillmentType === "preorder"
+                          ? "0"
+                          : currentForm.stockQuantity,
+                    }));
+                  }}
+                  value={variantForm.fulfillmentType}
+                >
+                  <option value="in_stock">In stock</option>
+                  <option value="preorder">Preorder</option>
+                </select>
+              </label>
+
+              {variantForm.fulfillmentType === "preorder" ? (
+                <label className="text-sm font-semibold text-slate-700">
+                  Preorder lead days
+                  <input
+                    className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                    max="45"
+                    min="1"
+                    onChange={(event) =>
+                      updateVariantForm("preorderLeadDays", event.target.value)
+                    }
+                    required
+                    type="number"
+                    value={variantForm.preorderLeadDays}
+                  />
+                </label>
+              ) : (
+                <label className="text-sm font-semibold text-slate-700">
+                  Stock quantity
+                  <input
+                    className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                    min="0"
+                    onChange={(event) =>
+                      updateVariantForm("stockQuantity", event.target.value)
+                    }
+                    required
+                    type="number"
+                    value={variantForm.stockQuantity}
+                  />
+                </label>
+              )}
+            </div>
+
+            <button
+              className="mt-5 rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isVariantSaving}
+              type="submit"
+            >
+              {isVariantSaving ? "Saving variant..." : "Save variant changes"}
+            </button>
+          </form>
+        )}
+
         {variants.length === 0 ? (
           <p className="mt-5 rounded-xl bg-stone-50 p-4 text-sm text-slate-600">
             This product has no variants yet. Add its first colour and size
@@ -395,7 +685,7 @@ export default function ProductEditPage({ token }) {
           </p>
         ) : (
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse">
+            <table className="w-full min-w-[840px] border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3 font-semibold">Colour</th>
@@ -404,6 +694,7 @@ export default function ProductEditPage({ token }) {
                   <th className="px-4 py-3 font-semibold">Price</th>
                   <th className="px-4 py-3 font-semibold">Availability</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
 
@@ -439,6 +730,47 @@ export default function ProductEditPage({ token }) {
                         {variant.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          aria-label={`Edit ${variant.color} ${variant.size}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={
+                            isVariantSaving || variantActionId === variant.id
+                          }
+                          onClick={() => startVariantEdit(variant)}
+                          title="Edit variant"
+                          type="button"
+                        >
+                          <Pencil size={16} />
+                        </button>
+
+                        <button
+                          aria-label={
+                            variant.is_active
+                              ? `Deactivate ${variant.color} ${variant.size}`
+                              : `Activate ${variant.color} ${variant.size}`
+                          }
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            variant.is_active
+                              ? "border-rose-200 text-rose-700 hover:bg-rose-50"
+                              : "border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+                          }`}
+                          disabled={
+                            isVariantSaving || variantActionId === variant.id
+                          }
+                          onClick={() => handleVariantStatusChange(variant)}
+                          title={
+                            variant.is_active
+                              ? "Deactivate variant"
+                              : "Activate variant"
+                          }
+                          type="button"
+                        >
+                          <Power size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -463,7 +795,9 @@ export default function ProductEditPage({ token }) {
 
           <button
             className="inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-700 px-4 py-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-            onClick={() => navigate(`/products/images/new?productId=${product.id}`)}
+            onClick={() =>
+              navigate(`/products/images/new?productId=${product.id}`)
+            }
             type="button"
           >
             <ImagePlus size={18} strokeWidth={2.5} />
@@ -507,7 +841,9 @@ export default function ProductEditPage({ token }) {
                   <div className="p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-emerald-950">
-                        {image.is_primary ? "Catalog cover image" : "Additional image"}
+                        {image.is_primary
+                          ? "Catalog cover image"
+                          : "Additional image"}
                       </p>
 
                       {image.is_primary && (
@@ -539,7 +875,9 @@ export default function ProductEditPage({ token }) {
                         }
                         value={image.product_variant_id || ""}
                       >
-                        <option value="">Whole product (not colour-specific)</option>
+                        <option value="">
+                          Whole product (not colour-specific)
+                        </option>
                         {variants.map((variant) => (
                           <option key={variant.id} value={variant.id}>
                             {variant.color} · {variant.size}
@@ -559,7 +897,8 @@ export default function ProductEditPage({ token }) {
                           Delete this image permanently?
                         </p>
                         <p className="mt-1 text-xs leading-5 text-red-700">
-                          It will disappear from the dashboard and customer shop.
+                          It will disappear from the dashboard and customer
+                          shop.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-3">
                           <button

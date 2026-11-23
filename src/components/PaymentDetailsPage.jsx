@@ -7,7 +7,11 @@ import {
   UserRound,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { confirmDeposit, getPaymentById } from "../services/api.js";
+import {
+  confirmDeposit,
+  getPaymentById,
+  getPaymentProofBlob,
+} from "../services/api.js";
 
 const formatMoney = (amount) => {
   return new Intl.NumberFormat("en-AE", {
@@ -59,6 +63,9 @@ function PaymentDetailsPage({ token, onPaymentTasksChanged }) {
   const [formErrorMessage, setFormErrorMessage] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [proofUrl, setProofUrl] = useState("");
+  const [proofErrorMessage, setProofErrorMessage] = useState("");
+  const [isLoadingProof, setIsLoadingProof] = useState(false);
 
   useEffect(() => {
     const loadPayment = async () => {
@@ -68,6 +75,7 @@ function PaymentDetailsPage({ token, onPaymentTasksChanged }) {
 
         const paymentData = await getPaymentById(token, paymentId);
         setPayment(paymentData);
+        setTransactionReference(paymentData.transaction_reference || "");
       } catch (error) {
         setErrorMessage(error.message || "Unable to load payment details.");
       } finally {
@@ -77,6 +85,49 @@ function PaymentDetailsPage({ token, onPaymentTasksChanged }) {
 
     loadPayment();
   }, [paymentId, token]);
+
+  useEffect(() => {
+    if (!payment?.has_payment_proof) {
+      return undefined;
+    }
+
+    let isCurrentRequest = true;
+    let temporaryProofUrl = "";
+
+    const loadPaymentProof = async () => {
+      try {
+        setProofErrorMessage("");
+        setIsLoadingProof(true);
+
+        const proofBlob = await getPaymentProofBlob(token, payment.id);
+        temporaryProofUrl = URL.createObjectURL(proofBlob);
+
+        if (isCurrentRequest) {
+          setProofUrl(temporaryProofUrl);
+        }
+      } catch (error) {
+        if (isCurrentRequest) {
+          setProofErrorMessage(
+            error.message || "Unable to load customer payment proof.",
+          );
+        }
+      } finally {
+        if (isCurrentRequest) {
+          setIsLoadingProof(false);
+        }
+      }
+    };
+
+    loadPaymentProof();
+
+    return () => {
+      isCurrentRequest = false;
+
+      if (temporaryProofUrl) {
+        URL.revokeObjectURL(temporaryProofUrl);
+      }
+    };
+  }, [payment?.has_payment_proof, payment?.id, token]);
 
   const handleConfirmDeposit = async (event) => {
     event.preventDefault();
@@ -289,16 +340,51 @@ function PaymentDetailsPage({ token, onPaymentTasksChanged }) {
           </div>
         </div>
 
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          {payment.has_payment_proof
-            ? "A protected proof preview will be available here after we build the secure customer upload step."
-            : "The customer has not submitted a payment screenshot yet. Staff should not confirm from customer evidence until proof is available."}
-        </p>
+        {payment.has_payment_proof ? (
+          <div className="mt-4">
+            {isLoadingProof && (
+              <p className="text-sm text-slate-600">
+                Loading private payment proof...
+              </p>
+            )}
+
+            {proofErrorMessage && (
+              <p className="rounded-xl bg-rose-50 p-4 text-sm text-rose-800">
+                {proofErrorMessage}
+              </p>
+            )}
+
+            {proofUrl && !isLoadingProof && (
+              <a
+                href={proofUrl}
+                rel="noreferrer"
+                target="_blank"
+                title="Open payment proof in a new tab"
+              >
+                <img
+                  alt={`Customer payment proof for ${payment.order_number}`}
+                  className="max-h-96 w-full rounded-xl border border-slate-200 bg-slate-50 object-contain transition hover:opacity-90"
+                  src={proofUrl}
+                />
+              </a>
+            )}
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Check the screenshot, deposit amount, and transaction reference
+              against the business bank account before confirming.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm leading-6 text-slate-600">
+            The customer has not submitted a payment screenshot yet. Staff
+            cannot confirm this deposit until proof is available.
+          </p>
+        )}
       </section>
 
       {payment.payment_type === "deposit" &&
         payment.fulfillment_type === "preorder" &&
-        payment.payment_record_status === "pending" && (
+        payment.payment_record_status === "submitted" && (
           <form
             className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 md:p-6"
             onSubmit={handleConfirmDeposit}
