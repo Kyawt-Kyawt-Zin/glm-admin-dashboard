@@ -298,7 +298,7 @@ export default function ProductEditPage({ token }) {
 
       await reloadImages();
       setPendingDeleteImageId(null);
-      setImageMessage("Image deleted permanently.");
+      setImageMessage("Image removed from the product.");
     } catch (error) {
       setImageErrorMessage(error.message || "Unable to delete this image.");
     } finally {
@@ -894,11 +894,11 @@ export default function ProductEditPage({ token }) {
                     {isDeleting ? (
                       <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
                         <p className="text-sm font-semibold text-red-800">
-                          Delete this image permanently?
+                          Remove this image from the product?
                         </p>
                         <p className="mt-1 text-xs leading-5 text-red-700">
                           It will disappear from the dashboard and customer
-                          shop.
+                          shop. Images stored in S3 remain in storage.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-3">
                           <button
@@ -915,7 +915,7 @@ export default function ProductEditPage({ token }) {
                             onClick={() => handleDeleteImage(image)}
                             type="button"
                           >
-                            {isWorking ? "Deleting..." : "Delete permanently"}
+                            {isWorking ? "Removing..." : "Remove image"}
                           </button>
                         </div>
                       </div>

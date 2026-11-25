@@ -1,0 +1,13 @@
+/*
+!/src
+!/public
+!/index.html
+!/vite.config.js
+!/package.json
+!/package-lock.json
+!/vercel.json
+
+/src/**/.env
+/src/**/.env.*
+/public/**/.env
+/public/**/.env.*

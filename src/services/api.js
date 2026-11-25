@@ -118,6 +118,10 @@ export const getProductImageUrl = (imagePath) => {
     return null;
   }
 
+  if (/^https?:\/\//i.test(imagePath)) {
+    return imagePath;
+  }
+
   const backendBaseUrl = API_BASE_URL.replace(/\/api$/, "");
 
   return `${backendBaseUrl}${imagePath}`;
@@ -225,6 +229,61 @@ export const uploadProductImage = async (token, productId, formData) => {
       Authorization: `Bearer ${token}`,
     },
     body: formData,
+  });
+};
+
+export const uploadProductImageToS3 = async (token, productId, imageData) => {
+  const image = imageData.get("image");
+
+  if (!(image instanceof File) || image.size === 0) {
+    throw new Error("Choose an image file first");
+  }
+
+  if (image.size > 5 * 1024 * 1024) {
+    throw new Error("The image must be 5 MB or smaller");
+  }
+
+  const upload = await request(`/products/${productId}/images/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      contentType: image.type,
+      variantId: imageData.get("variantId"),
+      altText: imageData.get("altText"),
+      sortOrder: imageData.get("sortOrder"),
+      isPrimary: imageData.get("isPrimary"),
+    }),
+  });
+
+  const s3Form = new FormData();
+
+  for (const [name, value] of Object.entries(upload.fields)) {
+    s3Form.append(name, value);
+  }
+
+  // Add the file after the signed form fields.
+  s3Form.append("file", image);
+
+  const s3Response = await fetch(upload.uploadUrl, {
+    method: "POST",
+    body: s3Form,
+    credentials: "omit",
+  });
+
+  if (!s3Response.ok) {
+    throw new Error("Unable to upload the image to storage");
+  }
+
+  return request(`/products/${productId}/images/complete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      uploadId: upload.uploadId,
+    }),
   });
 };
 
@@ -414,6 +473,27 @@ export const getPaymentProofBlob = async (token, paymentId) => {
       : null;
 
     throw new Error(result?.message || "Unable to load payment proof");
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const result = await response.json();
+
+    if (!result.url) {
+      throw new Error("Unable to load payment proof");
+    }
+
+    const imageResponse = await fetch(result.url, {
+      credentials: "omit",
+      cache: "no-store",
+    });
+
+    if (!imageResponse.ok) {
+      throw new Error("Unable to load payment proof from storage");
+    }
+
+    return imageResponse.blob();
   }
 
   return response.blob();

@@ -20,7 +20,7 @@ import {
   getRefundPendingPayments,
 } from "./services/api.js";
 import RecentOrders from "./components/RecentOrders.jsx";
-import LowStockVariants from "./components/LowstockVariants.jsx";
+import LowStockVariants from "./components/LowStockVariants.jsx";
 import OrdersPage from "./components/OrdersPage.jsx";
 import OrderDetailsPage from "./components/OrderDetailsPage.jsx";
 import OrderStatusHistoryPage from "./components/OrderStatusHistoryPage.jsx";

@@ -4,6 +4,7 @@ import {
   getProducts,
   getProductVariantsByProductId,
   uploadProductImage,
+  uploadProductImageToS3,
 } from "../services/api.js";
 import SelectChevron from "./SelectChevron.jsx";
 
@@ -131,7 +132,12 @@ export default function ProductImageUploadPage({ token }) {
       }
       imageData.append("isPrimary", String(form.isPrimary));
 
-      await uploadProductImage(token, Number(form.productId), imageData);
+      const uploadImage =
+        import.meta.env.VITE_PRODUCT_IMAGE_UPLOAD_DRIVER === "s3"
+          ? uploadProductImageToS3
+          : uploadProductImage;
+
+      await uploadImage(token, Number(form.productId), imageData);
 
       navigate("/products");
     } catch (error) {
