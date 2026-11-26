@@ -198,7 +198,32 @@ function OrdersPage({ token, currentUser }) {
 
       {!errorMessage && filteredOrders.length > 0 && (
         <>
-          <table className="w-full table-fixed text-centerF text-sm">
+          <div className="space-y-4 lg:hidden">
+            {filteredOrders.map((order) => (
+              <article key={order.id} className="rounded-xl border border-stone-200 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order</p>
+                    <p className="mt-1 break-all font-semibold text-emerald-950">{order.order_number}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusStyle(order.status)}`}>
+                    {formatText(order.status)}
+                  </span>
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div><dt className="text-xs font-semibold uppercase text-slate-500">Customer</dt><dd className="mt-1 break-words font-medium">{order.customer_name}</dd></div>
+                  <div><dt className="text-xs font-semibold uppercase text-slate-500">Fulfillment</dt><dd className="mt-1 capitalize">{formatText(order.fulfillment_type)} · {formatText(order.delivery_method)}</dd></div>
+                  <div><dt className="text-xs font-semibold uppercase text-slate-500">Payment</dt><dd className="mt-1 capitalize">{formatText(order.payment_status)}</dd></div>
+                  <div><dt className="text-xs font-semibold uppercase text-slate-500">Total</dt><dd className="mt-1 font-semibold">{formatCurrency(order.total_amount)}</dd></div>
+                </dl>
+                <button className="mt-4 inline-flex items-center gap-2 rounded-lg border border-emerald-800 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-50" onClick={() => navigate(`/orders/${order.id}`)} type="button">
+                  <Eye aria-hidden="true" className="h-4 w-4" /> View order
+                </button>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[900px] table-fixed text-left text-sm">
             <thead className="border-b border-stone-200 text-[11px] uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="w-[18%] px-3 py-3 font-semibold">Order</th>
@@ -289,6 +314,7 @@ function OrdersPage({ token, currentUser }) {
               ))}
             </tbody>
           </table>
+          </div>
           {isDetailsLoading && (
             <p className="mt-5 text-sm text-slate-500">
               Loading order details...

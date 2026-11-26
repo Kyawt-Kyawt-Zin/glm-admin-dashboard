@@ -59,6 +59,7 @@ export default function ProductEditPage({ token }) {
     preorderLeadDays: "14",
   });
   const [variantMessage, setVariantMessage] = useState("");
+  const [variantMessageTone, setVariantMessageTone] = useState("success");
   const [variantErrorMessage, setVariantErrorMessage] = useState("");
   const [isVariantSaving, setIsVariantSaving] = useState(false);
   const [variantActionId, setVariantActionId] = useState(null);
@@ -216,6 +217,7 @@ export default function ProductEditPage({ token }) {
       await reloadVariants();
 
       setEditingVariant(null);
+      setVariantMessageTone("success");
       setVariantMessage(
         `${variantForm.color.trim()} · ${variantForm.size.trim()} was updated successfully.`,
       );
@@ -249,6 +251,7 @@ export default function ProductEditPage({ token }) {
 
       await reloadVariants();
 
+      setVariantMessageTone(nextIsActive ? "success" : "inactive");
       setVariantMessage(
         `${variant.color} · ${variant.size} is now ${
           nextIsActive ? "active" : "inactive"
@@ -532,7 +535,7 @@ export default function ProductEditPage({ token }) {
         )}
 
         {variantMessage && (
-          <p className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <p role="status" className={`mt-5 rounded-xl px-4 py-3 text-sm ${variantMessageTone === "inactive" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
             {variantMessage}
           </p>
         )}
