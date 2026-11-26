@@ -80,6 +80,56 @@ const formatActivityDate = (dateValue) => {
   }).format(getDateFromKey(dateValue));
 };
 
+const ActivityDateTick = ({ x, y, payload }) => {
+  if (!payload?.value) return null;
+
+  const date = getDateFromKey(payload.value);
+
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+
+  const weekdayLabel = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+  }).format(date);
+
+  return (
+    <text x={x} y={y} fill="#64748b" fontSize={11} textAnchor="middle">
+      <tspan x={x} dy="1em">
+        {dateLabel}
+      </tspan>
+      <tspan x={x} dy="1.3em">
+        {weekdayLabel}
+      </tspan>
+    </text>
+  );
+};
+
+const ActivityTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+
+  const nonZeroItems = payload.filter((item) => Number(item.value) > 0);
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-white p-3 text-sm shadow-sm">
+      <p className="mb-2 font-semibold text-slate-700">
+        {formatActivityDate(label)}
+      </p>
+
+      {nonZeroItems.length > 0 ? (
+        nonZeroItems.map((item) => (
+          <p key={item.dataKey} style={{ color: item.color || item.fill }}>
+            {item.name}: {item.value}
+          </p>
+        ))
+      ) : (
+        <p className="text-slate-500">No orders</p>
+      )}
+    </div>
+  );
+};
+
 const formatWeekRange = (weekStart, weekEnd) => {
   if (!weekStart || !weekEnd) {
     return "";
@@ -181,7 +231,8 @@ function DashboardAnalytics({ token }) {
             </p>
             <h3 className="mt-1 text-xl font-bold">Orders by status</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Orders created each day, grouped by their current operational status.
+              Orders created each day, grouped by their current operational
+              status.
             </p>
           </div>
 
@@ -215,23 +266,19 @@ function DashboardAnalytics({ token }) {
               <BarChart data={activityData} barCategoryGap="20%">
                 <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="label"
+                  dataKey="date"
                   interval={0}
                   minTickGap={0}
-                  tick={{ fill: "#64748b", fontSize: 11 }}
-                  tickMargin={8}
-                />
+                  height={48}
+                  tick={<ActivityDateTick />}
+                />{" "}
                 <YAxis
                   allowDecimals={false}
                   tick={{ fill: "#64748b", fontSize: 12 }}
                 />
                 <Tooltip
                   cursor={{ fill: "#ecfdf5" }}
-                  formatter={(value, name) => [value, name]}
-                  contentStyle={{
-                    border: "1px solid #d1fae5",
-                    borderRadius: "12px",
-                  }}
+                  content={<ActivityTooltip />}
                 />
                 <Legend
                   iconType="circle"
