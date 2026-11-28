@@ -329,6 +329,14 @@ export default function ProductEditPage({ token }) {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm md:p-6">
+      <button
+        className="mb-5 inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-stone-100"
+        onClick={() => navigate("/products")}
+        type="button"
+      >
+        <ArrowLeft size={18} strokeWidth={2.5} />
+        Back to products
+      </button>
       <div className="flex flex-col gap-4 border-b border-stone-200 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-semibold text-amber-700">
@@ -351,7 +359,7 @@ export default function ProductEditPage({ token }) {
         </span>
       </div>
 
-      <form className="mt-6 max-w-2xl" onSubmit={handleSave}>
+      <form id="product-details-form" className="mt-6 max-w-2xl" onSubmit={handleSave}>
         <div>
           <label
             className="text-sm font-semibold text-slate-700"
@@ -390,7 +398,6 @@ export default function ProductEditPage({ token }) {
             Product name
           </label>
           <input
-            autoFocus
             className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
             id="productName"
             maxLength={150}
@@ -482,24 +489,6 @@ export default function ProductEditPage({ token }) {
           </p>
         )}
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-stone-100"
-            onClick={() => navigate("/products")}
-            type="button"
-          >
-            <ArrowLeft size={18} strokeWidth={2.5} />
-            Back to products
-          </button>
-
-          <button
-            className="rounded-xl bg-emerald-800 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSaving}
-            type="submit"
-          >
-            {isSaving ? "Saving..." : "Save changes"}
-          </button>
-        </div>
       </form>
       <section className="mt-10 border-t border-stone-200 pt-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -959,6 +948,37 @@ export default function ProductEditPage({ token }) {
           </div>
         )}
       </section>
+
+      <div className="mt-8 border-t border-stone-200 pt-6">
+        {errorMessage && (
+          <p role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </p>
+        )}
+        {successMessage && (
+          <p role="status" className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </p>
+        )}
+        <div className="flex flex-wrap justify-end gap-3">
+          <button
+            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-stone-100"
+            onClick={() => navigate("/products")}
+            type="button"
+          >
+            <ArrowLeft size={18} strokeWidth={2.5} />
+            Back to products
+          </button>
+          <button
+            className="rounded-xl bg-emerald-800 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSaving}
+            form="product-details-form"
+            type="submit"
+          >
+            {isSaving ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
