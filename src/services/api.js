@@ -45,6 +45,16 @@ export const getDashboardOverview = async (token) => {
   });
 };
 
+export const getConfirmedPreorderItems = async (token) =>
+  request("/dashboard/confirmed-preorders", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const getReceivedPreorderItems = async (token) =>
+  request("/dashboard/received-preorders", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
 export const getDashboardAnalytics = async (token, weekStart) => {
   const query = weekStart
     ? `?${new URLSearchParams({ weekStart }).toString()}`
@@ -98,6 +108,13 @@ export const updateOrderStatus = async (token, orderId, status) => {
     body: JSON.stringify({ status }),
   });
 };
+
+export const updatePreorderReceivedQuantity = async (token, orderId, itemId, quantity) =>
+  request(`/orders/${orderId}/items/${itemId}/preorder-received`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ quantity }),
+  });
 
 export const correctOrderStatus = async (token, orderId, status, reason) => {
   return request(`/orders/${orderId}/status-correction`, {

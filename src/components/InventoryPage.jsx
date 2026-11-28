@@ -58,6 +58,7 @@ export default function InventoryPage({ token }) {
   );
 
   useEffect(() => {
+    let cancelled = false;
     const loadInventory = async () => {
       try {
         setIsLoading(true);
@@ -79,16 +80,23 @@ export default function InventoryPage({ token }) {
           ...filterOptions,
         });
 
+        if (cancelled) return;
+        if (page > 1 && page > Math.max(1, data.pagination.totalPages)) {
+          setPage(Math.max(1, data.pagination.totalPages));
+          return;
+        }
         setVariants(data.items);
         setPagination(data.pagination);
       } catch (error) {
+        if (cancelled) return;
         setErrorMessage(error.message || "Unable to load inventory.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadInventory();
+    return () => { cancelled = true; };
   }, [filter, page, searchTerm, token]);
 
   const handleSearchSubmit = (event) => {
@@ -119,7 +127,7 @@ export default function InventoryPage({ token }) {
         </div>
 
         <p className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
-          {pagination.total} variants found
+          {isLoading ? "Loading…" : errorMessage ? "Count unavailable" : `${pagination.total} variants found`}
         </p>
       </div>
 
@@ -137,7 +145,10 @@ export default function InventoryPage({ token }) {
                 : "bg-stone-100 text-slate-600 hover:bg-stone-200"
             }`}
             key={value}
-            onClick={() => setFilter(value)}
+            onClick={() => {
+              setPage(1);
+              setFilter(value);
+            }}
             type="button"
           >
             {label}

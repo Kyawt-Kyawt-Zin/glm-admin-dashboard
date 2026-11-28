@@ -16,6 +16,7 @@ const formatDate = (dateValue) => {
 };
 
 const formatText = (value) => {
+  if (value === "deposit_submitted") return "receipt submitted · awaiting confirmation";
   return value.replaceAll("_", " ");
 };
 

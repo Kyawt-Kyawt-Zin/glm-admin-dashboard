@@ -618,8 +618,8 @@ export default function ProductEditPage({ token }) {
 
               <label className="text-sm font-semibold text-slate-700">
                 Fulfilment type
-                <select
-                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                <span className="relative mt-2 block"><select
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-600 appearance-none pr-16"
                   onChange={(event) => {
                     const fulfillmentType = event.target.value;
 
@@ -636,7 +636,7 @@ export default function ProductEditPage({ token }) {
                 >
                   <option value="in_stock">In stock</option>
                   <option value="preorder">Preorder</option>
-                </select>
+                </select><SelectChevron /></span>
               </label>
 
               {variantForm.fulfillmentType === "preorder" ? (

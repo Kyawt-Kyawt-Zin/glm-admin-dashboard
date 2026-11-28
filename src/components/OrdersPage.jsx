@@ -1,3 +1,4 @@
+import SelectChevron from "./SelectChevron.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getOrderById, getOrders } from "../services/api.js";
@@ -12,6 +13,7 @@ const formatCurrency = (amount) => {
 };
 
 const formatText = (value) => {
+  if (value === "deposit_submitted") return "receipt submitted · awaiting confirmation";
   return value ? value.replaceAll("_", " ") : "—";
 };
 
@@ -168,8 +170,8 @@ function OrdersPage({ token, currentUser }) {
         {orderGroup === "cancelled" && (
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700 sm:flex-row sm:items-center">
             Refund/payment result
-            <select
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-700"
+            <span className="relative block"><select
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-700 appearance-none pr-16"
               onChange={(event) => setPaymentFilter(event.target.value)}
               value={paymentFilter}
             >
@@ -179,7 +181,8 @@ function OrdersPage({ token, currentUser }) {
               <option value="deposit_forfeited">Deposit forfeited</option>
               <option value="unpaid">Unpaid</option>
               <option value="deposit_pending">Deposit pending</option>
-            </select>
+              <option value="deposit_submitted">Receipt submitted</option>
+            </select><SelectChevron /></span>
           </label>
         )}
       </div>

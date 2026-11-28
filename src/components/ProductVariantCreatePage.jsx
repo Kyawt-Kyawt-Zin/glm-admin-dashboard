@@ -166,7 +166,7 @@ export default function ProductVariantCreatePage({ token }) {
 
           <div className="relative mt-2">
             <select
-              className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+              className="w-full appearance-none rounded-xl border border-stone-300 bg-white px-4 py-3 pr-16 text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
               disabled={isLoadingProducts || Boolean(preselectedProductId)}
               id="productId"
               onChange={(event) => updateField("productId", event.target.value)}

@@ -12,6 +12,7 @@ import goldenLoomEmblem from "./assets/golden-loom-emblem.png";
 import LoginPage from "./components/LoginPage.jsx";
 import Footer from "./components/Footer.jsx";
 import DashboardOverview from "./components/DashboardOverview.jsx";
+import PreorderReminders from "./components/PreorderReminders.jsx";
 import DashboardAnalytics from "./components/DashboardAnalytics.jsx";
 import {
   getOrders,
@@ -106,6 +107,7 @@ function DashboardPage({ token }) {
       </div>
 
       <DashboardOverview token={token} />
+      <PreorderReminders token={token} />
       <DashboardAnalytics token={token} />
       <RecentOrders token={token} />
       <LowStockVariants token={token} />
@@ -210,6 +212,14 @@ function App() {
   useEffect(() => {
     loadPendingPaymentCount();
   }, [loadPendingPaymentCount]);
+
+  useEffect(() => {
+    loadPendingRequestCount();
+    if (!session?.token) return undefined;
+
+    const intervalId = window.setInterval(loadPendingRequestCount, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [loadPendingRequestCount, session?.token]);
 
   const navigate = useNavigate();
   const location = useLocation();

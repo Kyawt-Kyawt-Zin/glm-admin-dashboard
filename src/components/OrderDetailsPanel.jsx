@@ -1,5 +1,50 @@
+import SelectChevron from "./SelectChevron.jsx";
 import { useState } from "react";
-import { correctOrderStatus, updateOrderStatus } from "../services/api.js";
+import { correctOrderStatus, updateOrderStatus, updatePreorderReceivedQuantity } from "../services/api.js";
+
+function PreorderReceiptEditor({ item, order, token, onUpdated }) {
+  const [quantity, setQuantity] = useState(String(item.preorder_received_quantity ?? 0));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const editable = ["confirmed", "processing", "ready_for_delivery", "ready_for_pickup"].includes(order.status);
+
+  const save = async (event) => {
+    event.preventDefault();
+    const amount = Number(quantity);
+    if (quantity.trim() === "" || !Number.isInteger(amount) || amount < 0 || amount > Number(item.quantity)) {
+      setError(`Enter a whole number between 0 and ${item.quantity}.`);
+      return;
+    }
+    try {
+      setError("");
+      setMessage("");
+      setSaving(true);
+      await updatePreorderReceivedQuantity(token, order.id, item.id, amount);
+      await onUpdated(order.id);
+      setMessage("Received quantity saved.");
+    } catch (err) {
+      setError(err.message || "Unable to save received quantity.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={save} className="rounded-xl border border-stone-200 bg-white p-4">
+      <p className="font-semibold text-emerald-950">{item.product_name} · {item.color} · {item.size}</p>
+      <p className="mt-1 text-sm text-slate-600">Ordered: {item.quantity} · Received and reserved: {item.preorder_received_quantity ?? 0}</p>
+      {editable && <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="text-sm font-semibold text-slate-700">Received quantity
+          <input aria-label={`Received quantity for ${item.product_name} ${item.color} ${item.size}`} className="mt-1 block w-28 rounded-lg border border-stone-300 px-3 py-2" type="number" min="0" max={item.quantity} step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} required />
+        </label>
+        <button className="rounded-lg bg-emerald-800 px-4 py-2 font-semibold text-white disabled:opacity-50" disabled={saving} type="submit">{saving ? "Saving…" : "Save received"}</button>
+      </div>}
+      {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+      {message && <p role="status" className="mt-2 text-sm text-emerald-700">{message}</p>}
+    </form>
+  );
+}
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-AE", {
@@ -16,6 +61,7 @@ const formatDate = (dateValue) => {
 };
 
 const formatText = (value) => {
+  if (value === "deposit_submitted") return "receipt submitted · awaiting confirmation";
   return value ? value.replaceAll("_", " ") : "—";
 };
 
@@ -282,8 +328,8 @@ function OrderDetailsPanel({
 
           <label className="mt-4 block text-sm font-semibold text-slate-700">
             Correct status
-            <select
-              className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-amber-600"
+            <span className="relative mt-2 block"><select
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-amber-600 appearance-none pr-16"
               disabled={isCorrecting}
               onChange={(event) => setCorrectionStatus(event.target.value)}
               value={correctionStatus}
@@ -293,7 +339,7 @@ function OrderDetailsPanel({
                   {formatText(status)}
                 </option>
               ))}
-            </select>
+            </select><SelectChevron /></span>
           </label>
 
           <label className="mt-4 block text-sm font-semibold text-slate-700">
@@ -425,6 +471,16 @@ function OrderDetailsPanel({
           </table>
         </div>
       </div>
+
+      {order.fulfillment_type === "preorder" && (
+        <section className="mt-6">
+          <h4 className="font-semibold text-emerald-950">Preorder items received</h4>
+          <p className="mt-1 text-sm text-slate-600">Record items received for this order. These items are reserved for this customer and are not added to available shop stock.</p>
+          <div className="mt-3 space-y-3">
+            {items.map((item) => <PreorderReceiptEditor key={item.id} item={item} order={order} token={token} onUpdated={onStatusUpdated} />)}
+          </div>
+        </section>
+      )}
 
       <div className="mt-6">
         <h4 className="font-semibold text-emerald-950">Payment records</h4>

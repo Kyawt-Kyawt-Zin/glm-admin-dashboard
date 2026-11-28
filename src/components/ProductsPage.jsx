@@ -1,3 +1,4 @@
+import SelectChevron from "./SelectChevron.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { getProductImageUrl, getProducts } from "../services/api.js";
 import { useNavigate } from "react-router-dom";
@@ -108,15 +109,15 @@ function ProductsPage() {
           value={searchText}
         />
 
-        <select
-          className="rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-700"
+        <span className="relative block"><select
+          className="rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-700 appearance-none pr-16"
           onChange={(event) => setStatusFilter(event.target.value)}
           value={statusFilter}
         >
           <option value="all">All statuses</option>
           <option value="active">Active only</option>
           <option value="inactive">Inactive only</option>
-        </select>
+        </select><SelectChevron /></span>
       </div>
 
       {isLoading && (
